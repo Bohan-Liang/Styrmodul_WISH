@@ -259,26 +259,33 @@ void init_leg(double init_x, double init_y, double init_z)
 	X_OFFSET_FRONT_BACK_LEG = init_y/SQRT_OF_TWO;
 	Y_OFFSET_FRONT_BACK_LEG = init_y/SQRT_OF_TWO;
 	Y_OFFSET_MIDDLE_LEG		= init_y;
+	Z_OFFSET_LEG			= init_z;
 	
 	// Benens koordinat relativt kroppen är monteringspunktens koordinat + ändpunktens koordinat
 	// Kroppens origo sitter i mitten
 	left_front.x_from_center = init_y/SQRT_OF_TWO + LEG_MOUNT_X_FRONT_BACK;
 	left_front.y_from_center = init_y/SQRT_OF_TWO + LEG_MOUNT_Y_FRONT_BACK;
+	left_front.z_from_center = init_z;
 	
 	left_middle.x_from_center = 0;
 	left_middle.y_from_center = init_y + LEG_MOUNT_Y_MIDDLE;
+	left_middle.z_from_center = init_z;
 	
-	left_back.x_from_center = init_y/SQRT_OF_TWO + LEG_MOUNT_X_FRONT_BACK;
-	left_back.y_from_center = - init_y/SQRT_OF_TWO - LEG_MOUNT_Y_FRONT_BACK;
+	left_back.x_from_center = - init_y/SQRT_OF_TWO - LEG_MOUNT_X_FRONT_BACK;
+	left_back.y_from_center = init_y/SQRT_OF_TWO + LEG_MOUNT_Y_FRONT_BACK;
+	left_back.z_from_center = init_z;
 	
 	right_front.x_from_center = init_y/SQRT_OF_TWO + LEG_MOUNT_X_FRONT_BACK;
 	right_front.y_from_center = - init_y/SQRT_OF_TWO - LEG_MOUNT_Y_FRONT_BACK;
-		
+	right_front.z_from_center = init_z;
+	
 	right_middle.x_from_center = 0;
 	right_middle.y_from_center = - init_y - LEG_MOUNT_Y_MIDDLE;
+	right_middle.z_from_center = init_z;
 	
 	right_back.x_from_center = - init_y/SQRT_OF_TWO - LEG_MOUNT_X_FRONT_BACK;
 	right_back.y_from_center = - init_y/SQRT_OF_TWO - LEG_MOUNT_Y_FRONT_BACK;
+	right_back.z_from_center = init_z;
 }
 
 double SQ(double num)
@@ -286,10 +293,12 @@ double SQ(double num)
 	return num*num;
 }
 
-void set_pos_leg(leg_angles* leg, double x, double y, double z)
+void set_pos_leg(leg_info* leg, double x, double y, double z)
 {
 	double x_temp;
 	double y_temp;
+	
+	z = z + Z_OFFSET_LEG;
 	
 	if (leg->leg_number >= 3)
 	{

@@ -93,7 +93,7 @@ void translate_leg_angle();
 double SQ(double num);
 
 // omvandla kartesiska koordinater till servovinklar hos ett ben
-void set_pos_leg(leg_angles* leg, double x, double y, double z);
+void set_pos_leg(leg_info* leg, double x, double y, double z);
 
 // Initiera bennummer
 void init_leg(double init_x, double init_y, double init_z);

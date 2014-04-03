@@ -80,6 +80,7 @@ volatile int ANGLE_BACK_RIGHT_TIBIA;
 double X_OFFSET_FRONT_BACK_LEG;
 double Y_OFFSET_FRONT_BACK_LEG;
 double Y_OFFSET_MIDDLE_LEG;
+double Z_OFFSET_LEG;
 
 // Monteringsvinklar
 #define FEMUR_MOUNT_ANGLE		13.5
@@ -109,14 +110,21 @@ typedef struct
 	
 	double x_from_center; // x från robotens origo till ändpunkten
 	double y_from_center; // y från robotens origo till ändpunkten
-}leg_angles;
+	double z_from_center; // z från robotens origo till ändpunkten
+	
+	volatile double rotate_offset_x; // mm
+	volatile double rotate_offset_y; // mm
+	volatile double rotate_offset_z; // mm
+	
+	volatile int Gait_State;
+}leg_info;
 
-leg_angles left_front;
-leg_angles left_middle;
-leg_angles left_back;
+leg_info left_front;
+leg_info left_middle;
+leg_info left_back;
 
-leg_angles right_front;
-leg_angles right_middle;
-leg_angles right_back;
+leg_info right_front;
+leg_info right_middle;
+leg_info right_back;
 
 #endif /* LEG_DEF_H_ */
