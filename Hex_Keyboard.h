@@ -14,6 +14,8 @@ void init_hex();
 
 void translate_PIN();
 
+void translate_PIN_climb();
+
 volatile unsigned char hex_input;
 
 /*

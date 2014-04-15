@@ -1,8 +1,9 @@
 /*
  * Control_Table.h
  *
- * Created: 2014-03-24 21:01:47
- *  Author: Bohan
+ * Skapad: 2014-03-24 21:01:47
+ * Innehåll:
+ * Kontroll-parametrar hos AX-12A servo
  */ 
 
 

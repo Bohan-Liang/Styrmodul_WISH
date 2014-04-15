@@ -1,8 +1,8 @@
 /*
  * WISH_Gait_Engine.h
  *
- * Created: 2014-03-28 21:11:47
- *  Author: Bohan
+ * Skapad: 2014-03-28 21:11:47
+ *  Innehåll: Funktioner och globala variabler för gångstilen
  */ 
 
 
@@ -11,26 +11,50 @@
 
 #include "Servo_control.h"
 
-// Del-rörelse av ben
+// Definiera benens tillstånd under gångstilen
 #define TAKE_OFF_AND_LAND	1
 #define SWIM_BACK			2
 
-//int UPDATE_INTERVAL; // uppdaterings intervall i ms
-int FRAME_RATE;
+int FRAME_RATE; // Ange hur många del-rörelser en rörelseperiod består av
 
-volatile int Frame_Counter;
-volatile double X_Step_Length; // mm
-volatile double Y_Step_Length; // mm
-volatile double Angular_Step_Length; // grader
+volatile int Frame_Counter; // Räknare för del-rörelse
 
-volatile double Y_Pitch; // grader
-volatile double X_Roll; // grader
-volatile double Z_Yaw; // grader
+// Steglängder för olika rörelseriktningar
+volatile float X_Step_Length; // mm
+volatile float Y_Step_Length; // mm
+volatile int Angular_Step_Length; // grader*10 i heltal
 
-void init_gait(int frame_rate);
-void set_frame(leg_info* leg, double x_local, double y_local);
-void tripod_gait();
-void body_rotate(leg_info* leg, double x_angle, double y_angle, double z_angle);
+// Temporära parametrar från bussen
+volatile float X_Speed; // mm
+// volatile float X_Step_Length_temp; // mm
+// volatile float Y_Step_Length_temp; // mm
+// volatile int Angular_Step_Length_temp; // grader i heltal
+
+// Vinklar för kroppens rotation
+volatile float Y_Pitch; // grader
+volatile float X_Roll; // grader
+volatile float Z_Yaw; // grader
+
+// Tabellerad SIN och COS värden
+volatile float SIN_TABLE[401];
+volatile float COS_TABLE[401];
+
+//Tabellerad frame_factor
+volatile float COS_FRAME_FACTOR[60];
+volatile float SIN_FRAME_FACTOR[60];
+
+void init_gait(int frame_rate); // Initiera gångstilen
+
+// Gå till initial läget DIREKT!
+void Emergency_Stop();
+
+void set_frame(leg_info* leg, float x_local, float y_local); // Beräkna benets position under en del-rörelse
+void tripod_gait(); // Sekvensiera benrörelse
+void body_rotate(leg_info* leg, float x_angle, float y_angle, float z_angle); // Rotera kroppen
+
+void tripod_climb_gait(float z_height);
+void set_frame_climb(leg_info* leg, float x_local, float y_local, float z_height);
+
 
 
 #endif /* WISH_GAIT_ENGINE_H_ */
