@@ -64,24 +64,24 @@ void SPI_control()
 {
 	if (check_decoder(type_recieved, data_recieved, check_recieved))
 	{
+		signed char signed_temp = data_recieved;
+		
 		switch (type_recieved)
 		{
 			case 0x00:
-			// example
-			// sensor_1 = data_recieved;
+			X_Step_Length = (float)signed_temp;
 			break;
 			
 			case 0x01:
-			Manuver_Start();
+			Y_Step_Length = (float)signed_temp;
 			break;
 
 			case 0x02:
-			// styrkommando stopp
-			Manuver_Stop();
+			Angular_Step_Length = signed_temp;
 			break;
 			
 			case 0x03: // hastighet i x-leden
-			Set_Speed();
+			Emergency_Stop();
 			break;
 			
 			case 0x04:
@@ -89,15 +89,23 @@ void SPI_control()
 			
 			case 0x05:
 			Error = data_recieved;
+			Accumulated_Error += Error;
 			
 			break;
 			case 0x06:
+			Diff_Error = data_recieved;
 			break;
+			
 			case 0x07:
+			Object_Right = data_recieved;
 			break;
+			
 			case 0x08:
+			Object_Left = data_recieved;
 			break;
+			
 			case 0x09:
+			Front_Sensor = data_recieved;
 			break;
 			case 0x0A:
 			break;

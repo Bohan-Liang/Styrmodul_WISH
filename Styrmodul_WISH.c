@@ -25,6 +25,7 @@ int main(void)
 	
 	SPI_init();
 	timer1_init();
+	init_regulator();
 	
 	sei(); // aktivera globalavbrott
 	
@@ -43,7 +44,7 @@ int main(void)
 // 		Y_Step_Length = Y_Step_Length_temp;
 // 		Angular_Step_Length = Angular_Step_Length_temp;
 		SPI_control();
-		test_regulator(1);
+		PID_regulator();
 		tripod_gait();
 	}
 

@@ -319,7 +319,7 @@ void body_rotate(leg_info* leg, float x_angle, float y_angle, float z_angle)
 
 // ------------------------------------------------------------
 
-void tripod_climb_gait(float z_height)
+void tripod_climb_gait(float z_height_leg)
 {
 	_delay_ms(20);
 	if (X_Step_Length != 0 || Y_Step_Length != 0 || Angular_Step_Length != 0 ||
@@ -328,12 +328,12 @@ void tripod_climb_gait(float z_height)
 		float x_copy = X_Step_Length;
 		float y_copy = Y_Step_Length;
 		
-		set_frame_climb(&left_front, x_copy, y_copy, z_height);
-		set_frame_climb(&left_middle, x_copy, y_copy, z_height);
-		set_frame_climb(&left_back, x_copy, y_copy, z_height);
-		set_frame_climb(&right_front, x_copy, y_copy, z_height);
-		set_frame_climb(&right_middle, x_copy, y_copy, z_height);
-		set_frame_climb(&right_back, x_copy, y_copy, z_height);
+		set_frame_climb(&left_front, x_copy, y_copy, z_height_leg);
+		set_frame_climb(&left_middle, x_copy, y_copy, z_height_leg);
+		set_frame_climb(&left_back, x_copy, y_copy, z_height_leg);
+		set_frame_climb(&right_front, x_copy, y_copy, z_height_leg);
+		set_frame_climb(&right_middle, x_copy, y_copy, z_height_leg);
+		set_frame_climb(&right_back, x_copy, y_copy, z_height_leg);
 		
 		if (Frame_Counter == FRAME_RATE - 1)
 		{
@@ -349,11 +349,11 @@ void tripod_climb_gait(float z_height)
 	write_to_all();
 }
 
-void set_frame_climb(leg_info* leg, float x_local, float y_local, float z_height)
+void set_frame_climb(leg_info* leg, float x_local, float y_local, float z_height_leg)
 {
 	if (X_Step_Length == 0 && Y_Step_Length == 0 && Angular_Step_Length == 0)
 	{
-		z_height = 0;
+		z_height_leg = 0;
 	}
 	
 	// Om ingen kropps rotation finns är beräkningen onödig
@@ -391,42 +391,42 @@ void set_frame_climb(leg_info* leg, float x_local, float y_local, float z_height
 			set_pos_leg(leg,
 			x_local*(-cos_frame_factor) - x_reach_adjust + leg->rotate_offset_x,
 			y_local*(-cos_frame_factor) + y_reach_adjust*sin_frame_factor + leg->rotate_offset_y,
-			z_height*(-sin_frame_factor) + leg->rotate_offset_z);
+			z_height_leg*(-sin_frame_factor) + leg->rotate_offset_z);
 			break;
 			
 			case 3:
 			set_pos_leg(leg,
 			x_local*(-cos_frame_factor) - x_reach_adjust + leg->rotate_offset_x,
 			y_local*(-cos_frame_factor) - y_reach_adjust*sin_frame_factor + leg->rotate_offset_y,
-			z_height*(-sin_frame_factor) + leg->rotate_offset_z);
+			z_height_leg*(-sin_frame_factor) + leg->rotate_offset_z);
 			break;
 			
 			case 2:
 			set_pos_leg(leg,
 			x_local*(-cos_frame_factor) + x_reach_adjust + leg->rotate_offset_x,
 			y_local*(-cos_frame_factor) + y_reach_adjust*sin_frame_factor + leg->rotate_offset_y,
-			z_height*(-sin_frame_factor) + leg->rotate_offset_z);
+			z_height_leg*(-sin_frame_factor) + leg->rotate_offset_z);
 			break;
 			
 			case 5:
 			set_pos_leg(leg,
 			x_local*(-cos_frame_factor) + x_reach_adjust + leg->rotate_offset_x,
 			y_local*(-cos_frame_factor) - y_reach_adjust*sin_frame_factor + leg->rotate_offset_y,
-			z_height*(-sin_frame_factor) + leg->rotate_offset_z);
+			z_height_leg*(-sin_frame_factor) + leg->rotate_offset_z);
 			break;
 			
 			case 1:
 			set_pos_leg(leg,
 			x_local*(-cos_frame_factor) + leg->rotate_offset_x,
 			y_local*(-cos_frame_factor) + y_reach_adjust*sin_frame_factor + leg->rotate_offset_y,
-			z_height*(-sin_frame_factor) + leg->rotate_offset_z);
+			z_height_leg*(-sin_frame_factor) + leg->rotate_offset_z);
 			break;
 			
 			case 4:
 			set_pos_leg(leg,
 			x_local*(-cos_frame_factor) + leg->rotate_offset_x,
 			y_local*(-cos_frame_factor) - y_reach_adjust*sin_frame_factor + leg->rotate_offset_y,
-			z_height*(-sin_frame_factor) + leg->rotate_offset_z);
+			z_height_leg*(-sin_frame_factor) + leg->rotate_offset_z);
 			break;
 			
 			default:
