@@ -322,7 +322,7 @@ void set_pos_leg(leg_info* leg, float x, float y, float z)
 	float x_temp;
 	float y_temp;
 	
-	z = z + Z_OFFSET_LEG;
+	z = z + Z_OFFSET_LEG + Body_Height_Adjust;
 	
 	if (leg->leg_number >= 3)
 	{

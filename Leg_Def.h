@@ -79,6 +79,7 @@ float X_OFFSET_FRONT_BACK_LEG;
 float Y_OFFSET_FRONT_BACK_LEG;
 float Y_OFFSET_MIDDLE_LEG;
 float Z_OFFSET_LEG;
+volatile float Body_Height_Adjust; // Höjd över initial höjden, mm
 
 // Monteringsvinklar
 #define FEMUR_MOUNT_ANGLE		13.5

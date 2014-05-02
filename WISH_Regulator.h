@@ -10,6 +10,11 @@
 #define WISH_REGULATOR_H_
 #include "WISH_Gait_Engine.h"
 
+#define TURNING_LEFT 1
+#define TURNING_RIGHT 2
+#define REVERSES 3
+
+
 void PID_regulator();
 void init_regulator();
 void turning_corners(int corner);
@@ -28,12 +33,31 @@ volatile signed char Diff_Error; //speed_side_ways i ollan o robbe program
 
 volatile signed char Accumulated_Error; // integraldelen/summering av tidigare fel
 
-volatile signed char Object_Right; // ger ett värde 0 då båda sensorerna på höger sida ser en vägg. 1 då en av sensorerna ser en vägg och den andra inte, och 2 då ingen ser.
+volatile unsigned char Object_Right; // ger ett värde 0 då båda sensorerna på höger sida ser en vägg. 1 då en av sensorerna ser en vägg och den andra inte, och 2 då ingen ser.
 
-volatile signed char Object_Left; // motsvarande fast för vänster sida.
+volatile unsigned char Object_Left; // motsvarande fast för vänster sida.
 
-volatile signed char Front_Sensor; // främre sensorn
+volatile unsigned char Front_Sensor; // främre sensorn
 
-int Last_Front_Sensor; // tidigare värde på front sensorn
+volatile unsigned char Back_Sensor;
+
+float Direction;
+
+unsigned char Forward_Sensor;
+
+
+volatile char MODE;
+
+volatile char turn;
+
+uint16_t turn_counter;
+
+#define TURN_RIGHT 51
+#define TURN_LEFT -51
+
+#define FORWARD 1
+#define BACKWARD -1
+
+
 
 #endif /* WISH_REGULATOR_H_ */

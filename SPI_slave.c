@@ -18,6 +18,14 @@ void SPI_init(void)
 	SPCR = (1<<SPE)|(1<<SPIE);
 }
 
+//styrbeslut
+volatile uint16_t control_decision;
+void send_control_decision(uint16_t decision)
+{
+	control_decision = decision;
+}
+
+
 //initierar timer1
 void timer1_init()
 {
@@ -49,8 +57,18 @@ unsigned int check_decoder(char type, char data, char check)
 */
 void SPI_transmit_update()
 {
-	type_transmit = 0xAA; //Dummyvärde
-	data_transmit = 0x11; //Dummyvärde
+	if(control_decision == NOTHING_TO_SEND)
+	{
+		type_transmit = NOTHING_TO_SEND; //Dummyvärde
+		data_transmit = NOTHING_TO_SEND; //Dummyvärde
+	}
+	else
+	{
+		type_transmit = TYPE_CONTROL_DECISION;
+		data_transmit = control_decision;
+		control_decision = NOTHING_TO_SEND;
+	}
+
 	check_transmit = check_creator(type_transmit, data_transmit);
 }
 
@@ -64,27 +82,34 @@ void SPI_control()
 {
 	if (check_decoder(type_recieved, data_recieved, check_recieved))
 	{
-		signed char signed_temp = data_recieved;
+		 signed char signed_temp = data_recieved;
 		
 		switch (type_recieved)
 		{
 			case 0x00:
-			X_Step_Length = (float)signed_temp;
+			// Manuell eller autonom
+			// 0x00 är man; 0xff är auto
+			MODE = data_recieved;
+			
 			break;
 			
 			case 0x01:
-			Y_Step_Length = (float)signed_temp;
+			//Manuver_Start();
+			X_Step_Length = (float)signed_temp;
 			break;
 
 			case 0x02:
-			Angular_Step_Length = signed_temp;
+			//Manuver_Stop();
+			Y_Step_Length = (float)signed_temp;
 			break;
 			
 			case 0x03: // hastighet i x-leden
-			Emergency_Stop();
+			Angular_Step_Length = signed_temp;
+			//Set_Speed();
 			break;
 			
 			case 0x04:
+			Emergency_Stop();
 			break;
 			
 			case 0x05:
@@ -107,8 +132,11 @@ void SPI_control()
 			case 0x09:
 			Front_Sensor = data_recieved;
 			break;
+			
 			case 0x0A:
+			Back_Sensor = data_recieved;
 			break;
+			
 			case 0x0B:
 			break;
 			case 0x0C:
@@ -156,7 +184,7 @@ void SPI_transfer_update()
 		// check
 		case 2:
 		check_recieved = recieve_buffer;
-		//SPI_control();
+		SPI_control();
 		SPI_transmit_update();
 		transmit_buffer = type_transmit;
 		package_counter = 0;

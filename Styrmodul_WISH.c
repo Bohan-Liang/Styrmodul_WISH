@@ -32,10 +32,11 @@ int main(void)
 	translate_leg_angle();
 	
 	write_to_all();
+	Direction = FORWARD;
 
 	//_delay_ms(1000);
 	
-	init_gait(30);
+	init_gait(24);
 	
 	while(1)
 	{
@@ -43,9 +44,16 @@ int main(void)
 // 		X_Step_Length = X_Step_Length_temp;
 // 		Y_Step_Length = Y_Step_Length_temp;
 // 		Angular_Step_Length = Angular_Step_Length_temp;
-		SPI_control();
+		//SPI_control();
+		
+	if (MODE == 0xff)
+	{
 		PID_regulator();
+	}
+		
 		tripod_gait();
 	}
-
+	
+	
+	
 }

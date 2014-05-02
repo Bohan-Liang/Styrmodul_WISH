@@ -12,6 +12,12 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
 
+
+//skicka styrbeslut
+#define NOTHING_TO_SEND 0xff
+#define TYPE_CONTROL_DECISION 30
+void send_control_decision(uint16_t decision);
+
 //Globala variabler
 volatile int	package_counter;	// Håller reda på vilken typ av data som förväntas på bussen. Förväntar ny sändning då == 0
 volatile char	transmit_buffer;	// Data som ska skickas
@@ -24,6 +30,9 @@ volatile char	check_recieved;		// SPI
 volatile char	type_transmit;		// SPI
 volatile char	data_transmit;		// SPI
 volatile char	check_transmit;		// SPI
+
+
+
 
 void SPI_init(void); //Initierar SPI Slave
 
