@@ -15,7 +15,7 @@
 #define TAKE_OFF_AND_LAND	1
 #define SWIM_BACK			2
 
-int FRAME_RATE; // Ange hur många del-rörelser en rörelseperiod består av
+volatile int FRAME_RATE; // Ange hur många del-rörelser en rörelseperiod består av
 
 volatile int Frame_Counter; // Räknare för del-rörelse
 

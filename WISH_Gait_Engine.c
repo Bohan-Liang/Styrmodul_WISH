@@ -189,7 +189,7 @@ void set_frame(leg_info* leg, float x_local, float y_local)
 			break;
 		}
 		
-		if (Frame_Counter == FRAME_RATE - 1)
+		if (Frame_Counter >= FRAME_RATE - 1)
 		{
 			leg->Gait_State = SWIM_BACK;
 		}
@@ -218,7 +218,7 @@ void set_frame(leg_info* leg, float x_local, float y_local)
 			0);
 		}
 		
-		if (Frame_Counter == FRAME_RATE - 1)
+		if (Frame_Counter >= FRAME_RATE - 1)
 		{
 			leg->Gait_State = TAKE_OFF_AND_LAND;
 		}
@@ -229,7 +229,11 @@ void set_frame(leg_info* leg, float x_local, float y_local)
 // Sekvensiera benrörelse
 void tripod_gait()
 {
-	// _delay_ms(10); // Uppdaterings intervall.
+	//if (Body_Height_Adjust > 0)
+	//{
+		//_delay_ms(10);
+	//}
+	 // långsammare gång vid klättring.
 	// tiden för servo att nå sitt slutposition innan nästa position begärs
 	
 	// Behöver inte göra något om inget rörelse finns
@@ -247,7 +251,7 @@ void tripod_gait()
 		set_frame(&right_middle, x_copy, y_copy);
 		set_frame(&right_back, x_copy, y_copy);
 		
-		if (Frame_Counter == FRAME_RATE - 1)
+		if (Frame_Counter >= FRAME_RATE - 1)
 		{
 			Frame_Counter = 0;
 		}

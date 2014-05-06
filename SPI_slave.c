@@ -138,8 +138,10 @@ void SPI_control()
 			break;
 			
 			case 0x0B:
+			Object_Front = data_recieved;
 			break;
 			case 0x0C:
+			Object_Back = data_recieved;
 			break;
 			case 0x0D:
 			break;
@@ -156,7 +158,15 @@ void SPI_control()
 			// und so weiter
 			case 0x13:
 			// sista typen som ska uppdateras
+			
+			case 0x21:
+			// K_P = data_recieved;
 			break;
+			
+			case 0x22:
+			// K_D = data_recieved;
+			break;
+
 		}
 	}
 }

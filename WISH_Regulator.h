@@ -23,9 +23,12 @@ void turning_corners(int corner);
 #define Error_Band_Middle 50
 //#define Error_Band_Side 10
 
-#define K_P			1
-#define K_I			0
-#define K_D			4
+//#define K_P			1
+//#define K_I			0
+//#define K_D			4
+
+volatile signed char K_P;
+volatile signed char K_D;
 
 volatile signed char Error; // Avvikelse från mittlinje
 
@@ -41,9 +44,21 @@ volatile unsigned char Front_Sensor; // främre sensorn
 
 volatile unsigned char Back_Sensor;
 
+volatile unsigned char Object_Front;
+
+volatile unsigned char Object_Back;
+
 float Direction;
 
 unsigned char Forward_Sensor;
+
+unsigned char Type_Front_Sensor;
+
+unsigned char Type_Back_Sensor;
+
+unsigned char Right_Sensor;
+
+unsigned char Left_Sensor;
 
 
 volatile char MODE;

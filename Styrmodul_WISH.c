@@ -40,16 +40,11 @@ int main(void)
 	
 	while(1)
 	{
-		//translate_PIN();
-// 		X_Step_Length = X_Step_Length_temp;
-// 		Y_Step_Length = Y_Step_Length_temp;
-// 		Angular_Step_Length = Angular_Step_Length_temp;
-		//SPI_control();
 		
-	if (MODE == 0xff)
-	{
-		PID_regulator();
-	}
+		if (MODE == 0xff)
+		{
+			PID_regulator();
+		}
 		
 		tripod_gait();
 	}
