@@ -84,7 +84,14 @@ void SPI_control()
 			// Manuell eller autonom
 			// 0x00 är man; 0xff är auto
 			MODE = data_recieved;
-			
+			if(MODE == 0xff)
+			{
+				FRAME_RATE = AUTONOMUS_FRAME_RATE;
+			}
+			else
+			{
+				FRAME_RATE = MANUAL_FRAME_RATE;
+			}
 			break;
 			
 			case 0x01:

@@ -7,14 +7,17 @@
 #include "WISH_autonomus.h"
 #include "SPI_Slave.h"
 
-
 // Hinder
 #define BARRIER_DETECTED 3
-#define OBJECT_FRONT_MARGIN 30
+#define OBJECT_FRONT_MARGIN 50
+#define OBJECT_FRONT_HALT 30
 
 // Hastigheter
 #define SPEED_CORRIDOR 40
+#define MEDIUM_SPEED_KORRIDOR 10
+#define HALT_SPEED_KORRIDOR 1
 #define SPEED_CORNER 32
+#define SPEED_CLIMB 40
 
 #define HEIGHT_OFFSET_CLIMB 40
 
@@ -25,6 +28,7 @@
 
 // Marginaler
 #define STRAFE_REGULATOR_MARGIN 5
+#define MARGIN_FINISH_CLIMP 35
 
 // För referenssystem
 float _X_Step_Length;
@@ -37,14 +41,42 @@ int _Autonomus_Frame_Rate;
 int _Climb_Frame_Rate;
 
 #define REULATE_STRAFE(KP)													\
-	_Y_Step_Length = -KP * Error; 											\
-	if(abs(Y_Step_Length) > MAX_STRAFE_REGULATION)							\
-		_Y_Step_Length = sign(_Y_Step_Length) * MAX_STRAFE_REGULATION
+_Y_Step_Length = -KP * Error; 											\
+if(abs(Y_Step_Length) > MAX_STRAFE_REGULATION)							\
+_Y_Step_Length = sign(_Y_Step_Length) * MAX_STRAFE_REGULATION
 
+// vanlig reglering
+void _regulate()
+{
+	//Rotations reglering
+	int Regulator = (K_P*_Error + K_D*_Diff_Error);
+
+	if(Regulator <= 70 && Regulator >= -70)
+	{
+		_Angular_Step_Length = Regulator;
+	}
+	else if (Regulator < -70)
+	{
+		_Angular_Step_Length = -70;
+	}
+	else if (Regulator > 70)
+	{
+		_Angular_Step_Length = 70;
+	}
+	// Strafe reglering
+	if(abs(_Error) >= STRAFE_REGULATOR_MARGIN)
+	{
+		REULATE_STRAFE(STRAFE_K_P);
+	}
+	else
+	{
+		_Y_Step_Length = 0;
+	}
+}
 
 void init_autonomous_operation()
 {
-	_Autonomus_Frame_Rate = FRAME_RATE;
+	_Autonomus_Frame_Rate = AUTONOMUS_FRAME_RATE;
 	_Climb_Frame_Rate = 48;
 	
 	FRAME_RATE = _Autonomus_Frame_Rate;
@@ -68,6 +100,23 @@ void init_autonomous_operation()
 	
 	Current_Assignment = WALK_IN_CORRIDOR;
 	Direction = FORWARD;
+	
+	Error = 0; // Avvikelse från mittlinje
+
+	Diff_Error = 0; //speed_side_ways i ollan o robbe program
+
+
+	Object_Right = 0; // ger ett värde 0 då båda sensorerna på höger sida ser en vägg. 1 då en av sensorerna ser en vägg och den andra inte, och 2 då ingen ser.
+
+	Object_Left = 0; // motsvarande fast för vänster sida.
+
+	Front_Sensor = UINT8_MAX; // främre sensorn
+
+	Back_Sensor = UINT8_MAX;
+
+	Object_Front = 0;
+
+	Object_Back = 0;
 }
 
 unsigned char Transform_Objekt_Backward(unsigned char Object)
@@ -95,31 +144,82 @@ unsigned char Transform_Objekt_Backward(unsigned char Object)
 		break;
 	}
 }
+// körs efter ett kort avstånd fram uppstått.
+// dess uppgift är att bestämma om det bara var en störning
+// eller om och hur roboten ska agera
 void _determin_obstacle()
 {
 	++Tick_Counter;
-	if(Forward_Sensor > 70)
+	_regulate();
+	if(Tick_Counter > 3*FRAME_RATE)
 	{
-		X_Step_Length = 0;
+		// klätterhinder
+		if(Type_Front_Sensor == BARRIER_DETECTED)
+		{
+			//Ändrar höjd och vinkel
+			FRAME_RATE = _Climb_Frame_Rate;
+			Body_Height_Adjust = HEIGHT_OFFSET_CLIMB;
+			Y_Pitch = 70*Direction;
+			//Ändrar hastighet
+			_Angular_Step_Length = 0;
+			_Y_Step_Length = 0;
+			_X_Step_Length = SPEED_CLIMB;
+			//Byter assignment
+			Tick_Counter = 0;
+			Current_Assignment = CLIMB;
+		}
+		// korsning/sväng eller återvändsgränd
+		else
+		{
+			//vänd om
+			if (Right_Sensor == 0 && Left_Sensor == 0)
+			{
+				send_control_decision(REVERSES);
+				_Angular_Step_Length = 0;
+				_X_Step_Length = SPEED_CORRIDOR;
+				Direction = -Direction;
+				
+				Current_Assignment = WALK_IN_CORRIDOR;
+			}
+			//rotera höger
+			else if (Right_Sensor != 0)
+			{
+				_Y_Step_Length = 0;
+				_X_Step_Length = 0;
+				_Angular_Step_Length = TURN_RIGHT_SPEED;
+				Tick_Counter = 0;
+				Current_Assignment = ROTATE;
+			}
+			//rotera vänster
+			else // (Left_Sensor != 0)
+			{
+				_Y_Step_Length = 0;
+				_X_Step_Length = 0;
+				_Angular_Step_Length = TURN_LEFT_SPEED;
+				Tick_Counter = 0;
+				Current_Assignment = ROTATE;
+			}
+		}
+	}
+	else if(Forward_Sensor > OBJECT_FRONT_MARGIN)
+	{
+		_X_Step_Length = SPEED_CORRIDOR; //<-----------------------------------------------
+		_Y_Step_Length = 0;
+		_Angular_Step_Length = 0;
 		Tick_Counter = 0;
 		Current_Assignment = WALK_IN_CORRIDOR;
 	}
-	/*else if(Tick_Counter > 5*FRAME_RATE)
+	else if(Forward_Sensor < OBJECT_FRONT_HALT)
 	{
-		FRAME_RATE = _Climb_Frame_Rate;
-		Body_Height_Adjust = HEIGHT_OFFSET_CLIMB;
-		Y_Pitch = 70*Direction;
-			
-		Angular_Step_Length = 0;
-		Y_Step_Length = 0;
-			
-		Tick_Counter = 0;
-		Current_Assignment = CLIMB;
-	}*/
+		_X_Step_Length = HALT_SPEED_KORRIDOR;
+		_Y_Step_Length = 0;
+		_Angular_Step_Length = 0;
+	} 
+	// fortsätt i detta läge
 }
 void _climb()
 {
-	if(Back_Sensor <= 30 && Tick_Counter > 5*FRAME_RATE)
+	if(Backward_Sensor <= MARGIN_FINISH_CLIMP && Tick_Counter > 5*FRAME_RATE)
 	{
 		FRAME_RATE = _Autonomus_Frame_Rate;
 		Body_Height_Adjust = 0;
@@ -168,47 +268,19 @@ void _walk_in_corridor()
 	//-----------------------------------------------------------------
 	// Hinder framför robot
 	//-----------------------------------------------------------------
-	if(Forward_Sensor <= 70 && Object_Front == BARRIER_DETECTED)
+	if(Forward_Sensor <= OBJECT_FRONT_MARGIN)
 	{
-		X_Step_Length = 5;
-		Y_Step_Length = 0;
-		Angular_Step_Length = 0;
+		_X_Step_Length = MEDIUM_SPEED_KORRIDOR;
 		Tick_Counter = 0;
+		_Y_Step_Length = 0;
+		_Angular_Step_Length=0;
 		Current_Assignment = DETERMIN_OBSTACLE;
-	}	
-	else if (Forward_Sensor <= OBJECT_FRONT_MARGIN)
-	{
-		//vänd om
-		if (Right_Sensor == 0 && Left_Sensor == 0)
-		{
-			send_control_decision(REVERSES);
-			Angular_Step_Length = 0;
-			Direction = -Direction;
-		}
-		//rotera höger
-		else if (Right_Sensor != 0)
-		{
-			_Y_Step_Length = 0;
-			_X_Step_Length = 0;
-			_Angular_Step_Length = TURN_LEFT_SPEED;
-			Tick_Counter = 0;
-			Current_Assignment = ROTATE;
-		}
-		//rotera vänster
-		else if (Left_Sensor != 0)
-		{
-			_Y_Step_Length = 0;
-			_X_Step_Length = 0;
-			_Angular_Step_Length = TURN_LEFT_SPEED;
-			Tick_Counter = 0;
-			Current_Assignment = ROTATE;
-		}
 	}
-
 	//-----------------------------------------------------------------
 	//	Korsning
 	//-----------------------------------------------------------------
-	if (Right_Sensor == 1)
+	// Just nu lägre prioritet än hinder framför
+	else if (Right_Sensor == 1)
 	{
 		_Y_Step_Length = 0;
 		send_control_decision(TURNING_RIGHT);
@@ -230,30 +302,7 @@ void _walk_in_corridor()
 	// Vanlig reglering
 	else if (Right_Sensor != 2 && Left_Sensor !=2)
 	{
-		//Rotations reglering
-		int Regulator = (K_P*_Error + K_D*_Diff_Error);
-
-		if(Regulator <= 70 && Regulator >= -70)
-		{
-			_Angular_Step_Length = Regulator;
-		}
-		else if (Regulator < -70)
-		{
-			_Angular_Step_Length = -70;
-		}
-		else if (Regulator > 70)
-		{
-			_Angular_Step_Length = 70;
-		}
-		// Strafe reglering 
-		if(abs(_Error) >= STRAFE_REGULATOR_MARGIN)
-		{
-			REULATE_STRAFE(STRAFE_K_P);
-		}
-		else
-		{
-			_Y_Step_Length = 0;
-		}
+		_regulate();
 	}
 }
 void _turn()
@@ -274,17 +323,17 @@ void _finish_turn()
 	if((Right_Sensor != 2) && (Left_Sensor != 2)) //
 	{
 		if(Tick_Counter == 0)
-			Tick_Counter = 1;
+		Tick_Counter = 1;
 		REULATE_STRAFE(STRAFE_K_P);
 	}
 	
 	
 	/*if(Tick_Counter >= 2*FRAME_RATE)
 	{
-		Tick_Counter = 0;
-		_X_Step_Length =SPEED_CORRIDOR;
-		_Y_Step_Length = 0;
-		Current_Assignment = WALK_IN_CORRIDOR;
+	Tick_Counter = 0;
+	_X_Step_Length =SPEED_CORRIDOR;
+	_Y_Step_Length = 0;
+	Current_Assignment = WALK_IN_CORRIDOR;
 	}
 	else*/ if (Tick_Counter > 0)
 	{
@@ -308,15 +357,6 @@ void _rotate()
 
 void autonomous_operation()
 {
-	if(Front_Sensor < 30)
-	{
-		send_control_decision(2);
-	}
-	else if (Back_Sensor < 30)
-	{
-		send_control_decision(1);
-	}
-	
 	if(Direction == FORWARD)
 	{
 		_Error = Error;
@@ -324,6 +364,7 @@ void autonomous_operation()
 		Type_Front_Sensor = Object_Front;
 		Type_Back_Sensor = Object_Back;
 		Forward_Sensor = Front_Sensor;
+		Backward_Sensor = Back_Sensor;
 		Right_Sensor = Object_Right;
 		Left_Sensor = Object_Left;
 	}
@@ -332,6 +373,7 @@ void autonomous_operation()
 		_Error = -Error;
 		_Diff_Error = -Diff_Error;
 		Forward_Sensor = Back_Sensor;
+		Backward_Sensor = Front_Sensor;
 		Type_Back_Sensor = Object_Front;
 		Type_Front_Sensor = Object_Back;
 		Right_Sensor = Transform_Objekt_Backward(Object_Left);

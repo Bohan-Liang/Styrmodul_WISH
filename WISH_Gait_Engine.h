@@ -16,6 +16,9 @@
 #define SWIM_BACK			2
 
 volatile int FRAME_RATE; // Ange hur många del-rörelser en rörelseperiod består av
+#define AUTONOMUS_FRAME_RATE 30
+#define MANUAL_FRAME_RATE 20
+
 
 volatile int Frame_Counter; // Räknare för del-rörelse
 

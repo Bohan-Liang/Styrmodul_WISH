@@ -57,6 +57,8 @@ float Direction;
 
 unsigned char Forward_Sensor;
 
+unsigned char Backward_Sensor;
+
 unsigned char Type_Front_Sensor;
 
 unsigned char Type_Back_Sensor;

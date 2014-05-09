@@ -65,7 +65,7 @@ void Emergency_Stop()
 	set_pos_leg(&right_back,  0, 0, 0);
 	translate_leg_angle();
 	write_to_all();
-	Frame_Counter = FRAME_RATE/2;
+	
 	X_Step_Length_From_Bus = 0;
 	Y_Step_Length_From_Bus = 0;
 	Angular_Step_Length_From_Bus = 0;
@@ -75,6 +75,8 @@ void Emergency_Stop()
 	Z_Yaw = 0;
 	Body_Height_Adjust = 0;
 	MODE = 0;
+	FRAME_RATE = MANUAL_FRAME_RATE;
+	Frame_Counter = FRAME_RATE/2;
 }
 
 

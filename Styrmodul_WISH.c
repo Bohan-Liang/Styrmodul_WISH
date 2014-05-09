@@ -36,7 +36,7 @@ int main(void)
 
 	//_delay_ms(1000);
 	
-	init_gait(24);
+	init_gait(MANUAL_FRAME_RATE);
 	
 	init_autonomous_operation();
 
