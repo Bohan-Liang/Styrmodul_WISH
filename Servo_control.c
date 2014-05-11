@@ -421,4 +421,51 @@ void set_pos_leg(leg_info* leg, float x, float y, float z)
 */	
 }
 
+void set_single_servo_2byte(unsigned char id, unsigned char register_name, int data)
+{
+	unsigned char data_low = data & 0xff;
+	unsigned char data_high = (data & 0xff00)>>8;
+	int checksum = ~((id + 5 + WRITE_DATA + register_name + data_low + data_high) % 256);
+	USART_transmit_mode();
+	send_to_servo(0xff);
+	send_to_servo(0xff);
+	send_to_servo(id);
+	send_to_servo(0x05);
+	send_to_servo(WRITE_DATA);
+	send_to_servo(register_name);
+	send_to_servo(data_low);
+	send_to_servo(data_high);
+	send_to_servo(checksum);
+	//USART_receive_mode();
+}
 
+void set_single_servo_1byte(unsigned char id, unsigned char register_name, unsigned char data)
+{
+	int checksum = ~((id + 4 + WRITE_DATA + register_name + data) % 256);
+	USART_transmit_mode();
+	send_to_servo(0xff);
+	send_to_servo(0xff);
+	send_to_servo(id);
+	send_to_servo(0x04);
+	send_to_servo(WRITE_DATA);
+	send_to_servo(register_name);
+	send_to_servo(data);
+	send_to_servo(checksum);
+}
+
+void set_compliance(unsigned char id, unsigned char CW_margin, unsigned char CCW_margin, unsigned char CW_slope, unsigned char CCW_slope)
+{
+	int checksum = ~((id + 7 + WRITE_DATA + CW_COMPLIANCE_MARGIN + CW_margin + CCW_margin + CW_slope + CCW_slope) % 256);
+	USART_transmit_mode();
+	send_to_servo(0xff);
+	send_to_servo(0xff);
+	send_to_servo(id);
+	send_to_servo(0x07);
+	send_to_servo(WRITE_DATA);
+	send_to_servo(CW_COMPLIANCE_MARGIN);
+	send_to_servo(CW_margin);
+	send_to_servo(CCW_margin);
+	send_to_servo(CW_slope);
+	send_to_servo(CCW_slope);
+	send_to_servo(checksum);
+}

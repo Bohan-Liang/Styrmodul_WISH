@@ -55,6 +55,12 @@ int angle_to_data(float angle);
 // KUNGLIG FUNKTION! styr alla servo samtldigt
 void write_to_all();
 
+// styr en servo
+void set_single_servo_2byte(unsigned char id, unsigned char register_name, int data);
+void set_single_servo_1byte(unsigned char id, unsigned char register_name, unsigned char data);
+
+void set_compliance(unsigned char id, unsigned char CW_margin, unsigned char CCW_margin, unsigned char CW_slope, unsigned char CCW_slope);
+
 // omvandla grader (-150 - 150) till servos vinkeldata (0 - 1024)
 void translate_leg_angle();
 

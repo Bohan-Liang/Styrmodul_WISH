@@ -134,30 +134,46 @@ void SPI_control()
 			Front_Sensor = data_recieved;
 			break;
 			
-			case 0x0A:
+			case 0x0A://10
 			Back_Sensor = data_recieved;
 			break;
 			
-			case 0x0B:
+			case 0x0B://11
 			Object_Front = data_recieved;
 			break;
-			case 0x0C:
+			case 0x0C://12
 			Object_Back = data_recieved;
 			break;
-			case 0x0D:
+			case 0x0D://13
+			Right_Distance = data_recieved;
 			break;
-			case 0x0E:
+			case 0x0E://14
+			Left_Distance = data_recieved;
 			break;
-			case 0x0F:
+			case 0x0F://15
 			break;
-			case 0x10:
+			case 0x10://16
 			break;
-			case 0x11:
+			case 0x11://17
 			break;
-			case 0x12:
+			case 0x12://19
+			break;
+			case 0x13:
+			break;
+			case 0x14:
+			break;
+			case 0x15:
+			Front_Sensor_High = data_recieved;
+			break;
+			case 0x16://23
+			break;
+			case 0x17://24
+			break;
+			case 0x18://25
+			Back_sensor_High = data_recieved;
 			break;
 			// und so weiter
-			case 0x13:
+			case 0x19:
 			// sista typen som ska uppdateras
 			
 			case 0x21:

@@ -7,10 +7,11 @@
 #include "WISH_autonomus.h"
 #include "SPI_Slave.h"
 
+#include <stdbool.h>
 // Hinder
 #define BARRIER_DETECTED 3
-#define OBJECT_FRONT_MARGIN 50
-#define OBJECT_FRONT_HALT 30
+#define OBJECT_FRONT_MARGIN 40
+#define OBJECT_FRONT_HALT 25
 
 // Hastigheter
 #define SPEED_CORRIDOR 40
@@ -29,6 +30,14 @@
 // Marginaler
 #define STRAFE_REGULATOR_MARGIN 5
 #define MARGIN_FINISH_CLIMP 35
+#define OPEN_FORWARD_MARGIN 70
+
+
+#define NO_TURN 0
+#define RIGHT_TURN 1
+#define LEFT_TURN 2
+uint8_t Last_Turn;
+bool Back_From_Dead_End;
 
 // För referenssystem
 float _X_Step_Length;
@@ -36,6 +45,11 @@ float _Y_Step_Length;
 float _Angular_Step_Length;
 signed char _Error;
 signed char _Diff_Error;
+unsigned char Forward_Sensor_High;
+
+
+unsigned char _Left_Distance;
+unsigned char _Right_Distance;
 
 int _Autonomus_Frame_Rate;
 int _Climb_Frame_Rate;
@@ -45,6 +59,122 @@ _Y_Step_Length = -KP * Error; 											\
 if(abs(Y_Step_Length) > MAX_STRAFE_REGULATION)							\
 _Y_Step_Length = sign(_Y_Step_Length) * MAX_STRAFE_REGULATION
 
+
+void _start_climb()
+{
+	//Ändrar höjd och vinkel
+	FRAME_RATE = _Climb_Frame_Rate;
+	Body_Height_Adjust = HEIGHT_OFFSET_CLIMB;
+	Y_Pitch = 70*Direction;
+	//Ändrar hastighet
+	_Angular_Step_Length = 0;
+	_Y_Step_Length = 0;
+	_X_Step_Length = SPEED_CLIMB;
+	//Byter assignment
+	Tick_Counter = 0;
+	Current_Assignment = CLIMB;
+}
+void _start_walk_in_corridor()
+{
+	Tick_Counter = 0;
+	_X_Step_Length =SPEED_CORRIDOR;
+	_Y_Step_Length = 0;
+	_Angular_Step_Length = 0;
+	
+	Body_Height_Adjust = 0;
+	// för säkerhets skull nollställs pich här
+	Y_Pitch = 0;
+	set_body_rotation();
+	Current_Assignment = WALK_IN_CORRIDOR;
+}
+void _start_turn(int dir)
+{
+	_Y_Step_Length = 0;
+	send_control_decision(TURNING_LEFT);
+	_Angular_Step_Length = dir;
+	_X_Step_Length = SPEED_CORNER;
+	Tick_Counter = 0;
+	Current_Assignment = TURN;
+}
+void _start_finish_turn()
+{
+	_X_Step_Length = SPEED_CORRIDOR;
+	_Angular_Step_Length = 0;
+	Tick_Counter = 0;
+	send_control_decision(FINISHED_TURNING);
+	Current_Assignment = FINISH_TURN;
+}
+void _start_go_past_crossing()
+{
+	Y_Step_Length = 0;
+	_Angular_Step_Length = 0;
+	Tick_Counter = 0;
+	Current_Assignment = GO_PAST_CROSSING;
+}
+void _finish_turn()
+{
+	//Går tills ser korridor räknar sedan upp Tick counter
+	if((Right_Sensor != 2) && (Left_Sensor != 2)) //
+	{
+		if(Tick_Counter == 0)
+		Tick_Counter = 1;
+		REULATE_STRAFE(STRAFE_K_P);
+	}
+	
+	
+	/*if(Tick_Counter >= 2*FRAME_RATE)
+	{
+	Tick_Counter = 0;
+	_X_Step_Length =SPEED_CORRIDOR;
+	_Y_Step_Length = 0;
+	Current_Assignment = WALK_IN_CORRIDOR;
+	}
+	else*/ if (Tick_Counter > 0)
+	{
+		_start_walk_in_corridor();
+		//++Tick_Counter;
+	}
+}
+#define DECIRED_DISTANCE_SIDE 32
+#define SIDE_K_P 4
+
+void _go_past_crossing()
+{
+	if(Object_Left != 2 && Object_Right !=2)
+	{
+		_start_walk_in_corridor();
+	}
+ 	else if(Object_Left == 0) 	
+	{
+ 		_Y_Step_Length = SIDE_K_P*(DECIRED_DISTANCE_SIDE-_Left_Distance); 
+		if (_Y_Step_Length < -MAX_STRAFE_REGULATION)
+		{
+			_Y_Step_Length = -MAX_STRAFE_REGULATION;
+		}
+		else if (_Y_Step_Length > MAX_STRAFE_REGULATION)
+		{
+			_Y_Step_Length = MAX_STRAFE_REGULATION;
+		}
+ 	}
+ 	else if (Object_Right == 0)
+ 	{
+ 		_Y_Step_Length = SIDE_K_P*(Right_Distance - DECIRED_DISTANCE_SIDE);
+		if (_Y_Step_Length < -MAX_STRAFE_REGULATION)
+		{
+			_Y_Step_Length = -MAX_STRAFE_REGULATION;
+		}
+		else if (_Y_Step_Length > MAX_STRAFE_REGULATION)
+		{
+			_Y_Step_Length = MAX_STRAFE_REGULATION;
+		}
+ 	}
+	else
+	{
+		_Y_Step_Length = 0;
+		_Angular_Step_Length = 0;
+	}
+	
+}
 // vanlig reglering
 void _regulate()
 {
@@ -76,6 +206,10 @@ void _regulate()
 
 void init_autonomous_operation()
 {
+	Forward_Sensor_High = UINT8_MAX;
+	Last_Turn = NO_TURN;
+	Back_From_Dead_End = false;
+	
 	_Autonomus_Frame_Rate = AUTONOMUS_FRAME_RATE;
 	_Climb_Frame_Rate = 48;
 	
@@ -114,6 +248,9 @@ void init_autonomous_operation()
 
 	Back_Sensor = UINT8_MAX;
 
+	Front_Sensor_High = UINT8_MAX;
+	Back_sensor_High = UINT8_MAX;
+		
 	Object_Front = 0;
 
 	Object_Back = 0;
@@ -147,6 +284,14 @@ unsigned char Transform_Objekt_Backward(unsigned char Object)
 // körs efter ett kort avstånd fram uppstått.
 // dess uppgift är att bestämma om det bara var en störning
 // eller om och hur roboten ska agera
+void _start_determin_obstacle()
+{
+	_X_Step_Length = MEDIUM_SPEED_KORRIDOR;
+	Tick_Counter = 0;
+	_Y_Step_Length = 0;
+	_Angular_Step_Length=0;
+	Current_Assignment = DETERMIN_OBSTACLE;
+}
 void _determin_obstacle()
 {
 	++Tick_Counter;
@@ -156,17 +301,7 @@ void _determin_obstacle()
 		// klätterhinder
 		if(Type_Front_Sensor == BARRIER_DETECTED)
 		{
-			//Ändrar höjd och vinkel
-			FRAME_RATE = _Climb_Frame_Rate;
-			Body_Height_Adjust = HEIGHT_OFFSET_CLIMB;
-			Y_Pitch = 70*Direction;
-			//Ändrar hastighet
-			_Angular_Step_Length = 0;
-			_Y_Step_Length = 0;
-			_X_Step_Length = SPEED_CLIMB;
-			//Byter assignment
-			Tick_Counter = 0;
-			Current_Assignment = CLIMB;
+			_start_climb();
 		}
 		// korsning/sväng eller återvändsgränd
 		else
@@ -174,12 +309,9 @@ void _determin_obstacle()
 			//vänd om
 			if (Right_Sensor == 0 && Left_Sensor == 0)
 			{
-				send_control_decision(REVERSES);
-				_Angular_Step_Length = 0;
-				_X_Step_Length = SPEED_CORRIDOR;
+				Back_From_Dead_End = true;
 				Direction = -Direction;
-				
-				Current_Assignment = WALK_IN_CORRIDOR;
+				_start_walk_in_corridor();
 			}
 			//rotera höger
 			else if (Right_Sensor != 0)
@@ -188,6 +320,7 @@ void _determin_obstacle()
 				_X_Step_Length = 0;
 				_Angular_Step_Length = TURN_RIGHT_SPEED;
 				Tick_Counter = 0;
+				Y_Pitch = 0;
 				Current_Assignment = ROTATE;
 			}
 			//rotera vänster
@@ -197,6 +330,7 @@ void _determin_obstacle()
 				_X_Step_Length = 0;
 				_Angular_Step_Length = TURN_LEFT_SPEED;
 				Tick_Counter = 0;
+				Y_Pitch = 0;
 				Current_Assignment = ROTATE;
 			}
 		}
@@ -207,62 +341,70 @@ void _determin_obstacle()
 		_Y_Step_Length = 0;
 		_Angular_Step_Length = 0;
 		Tick_Counter = 0;
+		Y_Pitch = 0;
 		Current_Assignment = WALK_IN_CORRIDOR;
 	}
 	else if(Forward_Sensor < OBJECT_FRONT_HALT)
 	{
 		_X_Step_Length = HALT_SPEED_KORRIDOR;
 		_Y_Step_Length = 0;
+		Y_Pitch = 0;
 		_Angular_Step_Length = 0;
 	} 
 	// fortsätt i detta läge
 }
+
 void _climb()
 {
-	if(Backward_Sensor <= MARGIN_FINISH_CLIMP && Tick_Counter > 5*FRAME_RATE)
-	{
-		FRAME_RATE = _Autonomus_Frame_Rate;
-		Body_Height_Adjust = 0;
-		Y_Pitch = 0;
-		set_body_rotation();
-		Y_Step_Length = 0;
-		Angular_Step_Length = 0;
-		Current_Assignment = WALK_IN_CORRIDOR;
-	}
-	
-	if(Back_Sensor > 80)
+	//tvingar den att gå några steg framåt
+	if(Tick_Counter <= 5*FRAME_RATE)
 	{
 		++Tick_Counter;
 	}
-	
-	if (Right_Sensor != 2 && Left_Sensor !=2)
+	// går tills mönstret på baksensorn inträffar
+	else
 	{
-		//Rotations reglering
-		int Regulator = (K_P*_Error + K_D*_Diff_Error);
+		if(Backward_Sensor <= MARGIN_FINISH_CLIMP && Tick_Counter > 8*FRAME_RATE)
+		{
+			Y_Pitch = 0;
+			set_body_rotation();
+			FRAME_RATE = _Autonomus_Frame_Rate;
+			_start_walk_in_corridor();
+		}
+		if(Back_Sensor > 80)
+		{
+			++Tick_Counter;
+		}
+		if (Right_Sensor != 2 && Left_Sensor !=2)
+		{
+			//Rotations reglering
+			int Regulator = (K_P*_Error + K_D*_Diff_Error);
 
-		if(Regulator <= 70 && Regulator >= -70)
-		{
-			_Angular_Step_Length = Regulator;
-		}
-		else if (Regulator < -70)
-		{
-			_Angular_Step_Length = -70;
-		}
-		else if (Regulator > 70)
-		{
-			_Angular_Step_Length = 70;
-		}
-		// Strafe reglering
-		if(abs(_Error) >= STRAFE_REGULATOR_MARGIN)
-		{
-			REULATE_STRAFE(STRAFE_K_P);
-		}
-		else
-		{
-			_Y_Step_Length = 0;
+			if(Regulator <= 70 && Regulator >= -70)
+			{
+				_Angular_Step_Length = Regulator;
+			}
+			else if (Regulator < -70)
+			{
+				_Angular_Step_Length = -70;
+			}
+			else if (Regulator > 70)
+			{
+				_Angular_Step_Length = 70;
+			}
+			// Strafe reglering
+			if(abs(_Error) >= STRAFE_REGULATOR_MARGIN)
+			{
+				REULATE_STRAFE(STRAFE_K_P);
+			}
+			else
+			{
+				_Y_Step_Length = 0;
+			}
 		}
 	}
 }
+
 void _walk_in_corridor()
 {
 	//-----------------------------------------------------------------
@@ -270,80 +412,93 @@ void _walk_in_corridor()
 	//-----------------------------------------------------------------
 	if(Forward_Sensor <= OBJECT_FRONT_MARGIN)
 	{
-		_X_Step_Length = MEDIUM_SPEED_KORRIDOR;
-		Tick_Counter = 0;
-		_Y_Step_Length = 0;
-		_Angular_Step_Length=0;
-		Current_Assignment = DETERMIN_OBSTACLE;
+		_start_determin_obstacle();
 	}
 	//-----------------------------------------------------------------
 	//	Korsning
 	//-----------------------------------------------------------------
 	// Just nu lägre prioritet än hinder framför
+	
+	//kollar om kan svänga höger
 	else if (Right_Sensor == 1)
 	{
-		_Y_Step_Length = 0;
-		send_control_decision(TURNING_RIGHT);
-		_Angular_Step_Length = TURN_RIGHT_SPEED;
-		_X_Step_Length = SPEED_CORNER;
-		Tick_Counter = 0;
-		Current_Assignment = TURN;
+		if(Last_Turn == LEFT_TURN && Back_From_Dead_End == true)
+		{
+			// tillbaka vid samma korsning och får inte svänga
+			// höger 
+		}
+		else
+		{
+			Last_Turn = RIGHT_TURN;
+			Back_From_Dead_End = false;
+			_start_turn(TURN_RIGHT_SPEED);
+		}
 	}
-	// kollar om ska svänga vänster
+	// kollar om kan svänga vänster
 	else if (Left_Sensor == 1)
 	{
-		_Y_Step_Length = 0;
-		send_control_decision(TURNING_LEFT);
-		_Angular_Step_Length = TURN_LEFT_SPEED;
-		_X_Step_Length = SPEED_CORNER;
-		Tick_Counter = 0;
-		Current_Assignment = TURN;
+		//_start_go_past_crossing();
+		if(Last_Turn == RIGHT_TURN && Back_From_Dead_End == true)
+		{
+			// tillbaka vid samma korsning och får inte svänga
+			// höger
+		}
+		else
+		{
+			Last_Turn = LEFT_TURN;
+			Back_From_Dead_End = false;
+			_start_turn(TURN_RIGHT_SPEED);
+		}
 	}
 	// Vanlig reglering
-	else if (Right_Sensor != 2 && Left_Sensor !=2)
+	else
 	{
-		_regulate();
+		if(Right_Sensor == 0 && Left_Sensor == 0)
+		{
+			_regulate();
+		}
+		else if(Object_Left == 0)
+		{
+			_Y_Step_Length = SIDE_K_P*(DECIRED_DISTANCE_SIDE-_Left_Distance);
+			if (_Y_Step_Length < -MAX_STRAFE_REGULATION)
+			{
+				_Y_Step_Length = -MAX_STRAFE_REGULATION;
+			}
+			else if (_Y_Step_Length > MAX_STRAFE_REGULATION)
+			{
+				_Y_Step_Length = MAX_STRAFE_REGULATION;
+			}
+		}
+		else if (Object_Right == 0)
+		{
+			_Y_Step_Length = SIDE_K_P*(Right_Distance - DECIRED_DISTANCE_SIDE);
+			if (_Y_Step_Length < -MAX_STRAFE_REGULATION)
+			{
+				_Y_Step_Length = -MAX_STRAFE_REGULATION;
+			}
+			else if (_Y_Step_Length > MAX_STRAFE_REGULATION)
+			{
+				_Y_Step_Length = MAX_STRAFE_REGULATION;
+			}
+		}
+		else
+		{
+			_Angular_Step_Length = 0;
+			_Y_Step_Length = 0;
+		}
 	}
 }
+
 void _turn()
 {
 	++Tick_Counter;
 	if (Tick_Counter >= 6*FRAME_RATE)
 	{
-		_X_Step_Length = SPEED_CORRIDOR;
-		_Angular_Step_Length = 0;
-		Tick_Counter = 0;
-		send_control_decision(FINISHED_TURNING);
-		Current_Assignment = FINISH_TURN;
+		_start_finish_turn();
 	}
 }
-void _finish_turn()
-{
-	//Går tills ser korridor räknar sedan upp Tick counter
-	if((Right_Sensor != 2) && (Left_Sensor != 2)) //
-	{
-		if(Tick_Counter == 0)
-		Tick_Counter = 1;
-		REULATE_STRAFE(STRAFE_K_P);
-	}
-	
-	
-	/*if(Tick_Counter >= 2*FRAME_RATE)
-	{
-	Tick_Counter = 0;
-	_X_Step_Length =SPEED_CORRIDOR;
-	_Y_Step_Length = 0;
-	Current_Assignment = WALK_IN_CORRIDOR;
-	}
-	else*/ if (Tick_Counter > 0)
-	{
-		Tick_Counter = 0;
-		_X_Step_Length =SPEED_CORRIDOR;
-		_Y_Step_Length = 0;
-		Current_Assignment = WALK_IN_CORRIDOR;
-		//++Tick_Counter;
-	}
-}
+
+
 void _rotate()
 {
 	++Tick_Counter;
@@ -367,6 +522,11 @@ void autonomous_operation()
 		Backward_Sensor = Back_Sensor;
 		Right_Sensor = Object_Right;
 		Left_Sensor = Object_Left;
+		
+		Forward_Sensor_High = Front_Sensor_High;
+		
+		_Left_Distance = Left_Distance;
+		_Right_Distance= Right_Distance;
 	}
 	else
 	{
@@ -378,6 +538,11 @@ void autonomous_operation()
 		Type_Front_Sensor = Object_Back;
 		Right_Sensor = Transform_Objekt_Backward(Object_Left);
 		Left_Sensor  = Transform_Objekt_Backward(Object_Right);
+		
+		Forward_Sensor_High = Back_sensor_High;
+		
+		_Left_Distance = Right_Distance;
+		_Right_Distance= Left_Distance;
 	}
 	
 	switch (Current_Assignment)
@@ -412,6 +577,12 @@ void autonomous_operation()
 		//---------------------------------------------------------------------
 		_determin_obstacle();
 		break;
+		//---------------------------------------------------------------------
+		case GO_PAST_CROSSING:
+		//---------------------------------------------------------------------
+		_go_past_crossing();
+		break;
+		
 	}
 	
 	//Sätter hastigheter

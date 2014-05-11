@@ -18,6 +18,7 @@
 #define ROTATING_LEFT 5
 #define ROTATING_RIGHT 6
 #define DETERMIN_OBSTACLE 7
+#define GO_PAST_CROSSING 8
 
 
 void autonomous_operation();
@@ -52,6 +53,12 @@ volatile unsigned char Back_Sensor;
 volatile unsigned char Object_Front;
 
 volatile unsigned char Object_Back;
+
+volatile unsigned char Left_Distance;
+volatile unsigned char Right_Distance;
+
+volatile unsigned char Front_Sensor_High;
+volatile unsigned char Back_sensor_High;
 
 float Direction;
 
