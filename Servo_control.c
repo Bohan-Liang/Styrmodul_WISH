@@ -307,6 +307,33 @@ void init_leg(float init_x, float init_y, float init_z)
 	right_back.x_from_center = - init_y/SQRT_OF_TWO - LEG_MOUNT_X_FRONT_BACK;
 	right_back.y_from_center = - init_y/SQRT_OF_TWO - LEG_MOUNT_Y_FRONT_BACK;
 	right_back.z_from_center = init_z;
+	
+
+	// Sätter compliance för alla servo förutom COXA leder
+	set_compliance(3, 1, 1, 32, 32);
+	_delay_us(1200);
+	set_compliance(4, 1, 1, 32, 32);
+	_delay_us(1200);
+	set_compliance(5, 1, 1, 32, 32);
+	_delay_us(1200);
+	set_compliance(6, 1, 1, 32, 32);
+	_delay_us(1200);
+	set_compliance(9, 1, 1, 32, 32);
+	_delay_us(1200);
+	set_compliance(10, 1, 1, 32, 32);
+	_delay_us(1200);
+	set_compliance(11, 1, 1, 32, 32);
+	_delay_us(1200);
+	set_compliance(12, 1, 1, 32, 32);
+	_delay_us(1200);
+	set_compliance(15, 1, 1, 32, 32);
+	_delay_us(1200);
+	set_compliance(16, 1, 1, 32, 32);
+	_delay_us(1200);
+	set_compliance(17, 1, 1, 32, 32);
+	_delay_us(1200);
+	set_compliance(18, 1, 1, 32, 32);
+	_delay_us(1200);
 }
 
 float SQ(float num)

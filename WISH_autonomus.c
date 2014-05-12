@@ -284,9 +284,10 @@ unsigned char Transform_Objekt_Backward(unsigned char Object)
 // körs efter ett kort avstånd fram uppstått.
 // dess uppgift är att bestämma om det bara var en störning
 // eller om och hur roboten ska agera
+#define MS_TO_TICK(ms) ms*FRAME_RATE
 void _start_determin_obstacle()
 {
-	_X_Step_Length = MEDIUM_SPEED_KORRIDOR;
+	_X_Step_Length = HALT_SPEED_KORRIDOR;
 	Tick_Counter = 0;
 	_Y_Step_Length = 0;
 	_Angular_Step_Length=0;
@@ -295,63 +296,150 @@ void _start_determin_obstacle()
 void _determin_obstacle()
 {
 	++Tick_Counter;
-	_regulate();
-	if(Tick_Counter > 3*FRAME_RATE)
+	//_regulate();
+	/*if(Tick_Counter == 0)
 	{
-		// klätterhinder
-		if(Type_Front_Sensor == BARRIER_DETECTED)
+		Emergency_Stop();
+	}
+	++Tick_Counter;
+	if(Tick_Counter < MS_TO_TICK(100))
+	{
+		Z_Yaw = 50;
+		
+		if (Forward_Sensor > OBJECT_FRONT_MARGIN)
+		{
+			Z_Yaw = 0;
+			set_body_rotation();
+			_start_walk_in_corridor();
+		}
+	}
+	else if (Tick_Counter < MS_TO_TICK(200))
+	{
+		Z_Yaw = -50;
+		
+		if (Forward_Sensor > OBJECT_FRONT_MARGIN)
+		{
+			Z_Yaw = 0;
+			set_body_rotation();
+			_start_walk_in_corridor();
+		}
+	}
+	
+	else
+	{
+		Z_Yaw = 0;
+		set_body_rotation();
+		if (Type_Front_Sensor == BARRIER_DETECTED)
 		{
 			_start_climb();
 		}
-		// korsning/sväng eller återvändsgränd
+		
 		else
 		{
-			//vänd om
-			if (Right_Sensor == 0 && Left_Sensor == 0)
-			{
-				Back_From_Dead_End = true;
-				Direction = -Direction;
-				_start_walk_in_corridor();
-			}
-			//rotera höger
-			else if (Right_Sensor != 0)
-			{
-				_Y_Step_Length = 0;
-				_X_Step_Length = 0;
-				_Angular_Step_Length = TURN_RIGHT_SPEED;
-				Tick_Counter = 0;
-				Y_Pitch = 0;
-				Current_Assignment = ROTATE;
-			}
-			//rotera vänster
-			else // (Left_Sensor != 0)
-			{
-				_Y_Step_Length = 0;
-				_X_Step_Length = 0;
-				_Angular_Step_Length = TURN_LEFT_SPEED;
-				Tick_Counter = 0;
-				Y_Pitch = 0;
-				Current_Assignment = ROTATE;
-			}
+			Direction = -Direction;
+			_start_walk_in_corridor();
+		}
+	}*/
+	if(Tick_Counter <= FRAME_RATE)
+	{
+		_Angular_Step_Length = TURN_LEFT_SPEED;
+	}
+	else if ( Tick_Counter <= 5*FRAME_RATE)
+	{
+		_Angular_Step_Length = 0;
+		if (Forward_Sensor > OBJECT_FRONT_MARGIN)
+		{
+			_start_walk_in_corridor();
 		}
 	}
-	else if(Forward_Sensor > OBJECT_FRONT_MARGIN)
+	else if ( Tick_Counter <= 7*FRAME_RATE)
 	{
-		_X_Step_Length = SPEED_CORRIDOR; //<-----------------------------------------------
-		_Y_Step_Length = 0;
-		_Angular_Step_Length = 0;
-		Tick_Counter = 0;
-		Y_Pitch = 0;
-		Current_Assignment = WALK_IN_CORRIDOR;
+		_Angular_Step_Length = TURN_RIGHT_SPEED;	
 	}
-	else if(Forward_Sensor < OBJECT_FRONT_HALT)
+	else if ( Tick_Counter <= 12*FRAME_RATE)
 	{
-		_X_Step_Length = HALT_SPEED_KORRIDOR;
-		_Y_Step_Length = 0;
-		Y_Pitch = 0;
 		_Angular_Step_Length = 0;
-	} 
-	// fortsätt i detta läge
+		if (Forward_Sensor > OBJECT_FRONT_MARGIN)
+		{
+			Z_Yaw = 0;
+			set_body_rotation();
+			_start_walk_in_corridor();
+		}
+	}
+	else if (Tick_Counter <= 13*FRAME_RATE)
+	{
+		_Angular_Step_Length = TURN_LEFT_SPEED;
+	}
+	else
+	{
+		if (Type_Front_Sensor == BARRIER_DETECTED)
+		{
+			_start_climb();
+		}
+		
+		else
+		{
+			Direction = -Direction;
+			_start_walk_in_corridor();
+		}
+	}
+	
+// 	if(Tick_Counter > 3*FRAME_RATE)
+// 	{
+// 		// klätterhinder
+// 		if(Type_Front_Sensor == BARRIER_DETECTED)
+// 		{
+// 			_start_climb();
+// 		}
+// 		// korsning/sväng eller återvändsgränd
+// 		else
+// 		{
+// 			//vänd om
+// 			if (Right_Sensor == 0 && Left_Sensor == 0)
+// 			{
+// 				Back_From_Dead_End = true;
+// 				Direction = -Direction;
+// 				_start_walk_in_corridor();
+// 			}
+// 			//rotera höger
+// 			else if (Right_Sensor != 0)
+// 			{
+// 				_Y_Step_Length = 0;
+// 				_X_Step_Length = 0;
+// 				_Angular_Step_Length = TURN_RIGHT_SPEED;
+// 				Tick_Counter = 0;
+// 				Y_Pitch = 0;
+// 				Current_Assignment = ROTATE;
+// 			}
+// 			//rotera vänster
+// 			else // (Left_Sensor != 0)
+// 			{
+// 				_Y_Step_Length = 0;
+// 				_X_Step_Length = 0;
+// 				_Angular_Step_Length = TURN_LEFT_SPEED;
+// 				Tick_Counter = 0;
+// 				Y_Pitch = 0;
+// 				Current_Assignment = ROTATE;
+// 			}
+// 		}
+// 	}
+// 	else if(Forward_Sensor > OBJECT_FRONT_MARGIN)
+// 	{
+// 		_X_Step_Length = SPEED_CORRIDOR; //<-----------------------------------------------
+// 		_Y_Step_Length = 0;
+// 		_Angular_Step_Length = 0;
+// 		Tick_Counter = 0;
+// 		Y_Pitch = 0;
+// 		Current_Assignment = WALK_IN_CORRIDOR;
+// 	}
+// 	else if(Forward_Sensor < OBJECT_FRONT_HALT)
+// 	{
+// 		_X_Step_Length = HALT_SPEED_KORRIDOR;
+// 		_Y_Step_Length = 0;
+// 		Y_Pitch = 0;
+// 		_Angular_Step_Length = 0;
+// 	} 
+// 	// fortsätt i detta läge
 }
 
 void _climb()
@@ -449,6 +537,11 @@ void _walk_in_corridor()
 			Back_From_Dead_End = false;
 			_start_turn(TURN_RIGHT_SPEED);
 		}
+	}
+	else if (Right_Sensor == 2 || Left_Sensor == 2)//<----------------------???
+	{
+		Back_From_Dead_End = false;
+		Last_Turn = NO_TURN;
 	}
 	// Vanlig reglering
 	else
