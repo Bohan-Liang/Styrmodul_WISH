@@ -77,6 +77,7 @@ void Emergency_Stop()
 	MODE = 0;
 	FRAME_RATE = MANUAL_FRAME_RATE;
 	Frame_Counter = FRAME_RATE/2;
+	reset_autonomus_operation();
 }
 
 
@@ -215,7 +216,7 @@ void set_frame(leg_info* leg, float x_local, float y_local)
 		{
 			set_pos_leg(leg,
 			x_local*(cos_frame_factor) - x_reach_adjust + leg->rotate_offset_x,
-			y_local*(cos_frame_factor + leg->rotate_offset_y),
+			y_local*(cos_frame_factor) + leg->rotate_offset_y,
 			leg->rotate_offset_z);
 		}
 		else if (leg->leg_number == 2 || leg->leg_number == 5)
@@ -245,9 +246,9 @@ void set_frame(leg_info* leg, float x_local, float y_local)
 void tripod_gait()
 {
 	// Behöver inte göra något om inget rörelse finns
-	//if (X_Step_Length != 0 || Y_Step_Length != 0 || Angular_Step_Length != 0 ||
-	//Y_Pitch != 0 || X_Roll != 0 || Z_Yaw != 0)
-	if (X_Step_Length != 0 || Y_Step_Length != 0 || Angular_Step_Length != 0)
+	if (X_Step_Length != 0 || Y_Step_Length != 0 || Angular_Step_Length != 0 ||
+	Y_Pitch != 0 || X_Roll != 0 || Z_Yaw != 0)
+	//if (X_Step_Length != 0 || Y_Step_Length != 0 || Angular_Step_Length != 0)
 	{
 		// kopiera in från globala variabler. eftersom globala variabler kan ändras när osm helst
 		float x_copy = X_Step_Length;

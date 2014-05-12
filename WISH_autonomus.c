@@ -14,9 +14,9 @@
 #define OBJECT_FRONT_HALT 25
 
 // Hastigheter
-#define SPEED_CORRIDOR 40
+#define SPEED_CORRIDOR 32
 #define MEDIUM_SPEED_KORRIDOR 10
-#define HALT_SPEED_KORRIDOR 1
+#define HALT_SPEED_KORRIDOR 0
 #define SPEED_CORNER 32
 #define SPEED_CLIMB 40
 
@@ -58,6 +58,8 @@ int _Climb_Frame_Rate;
 _Y_Step_Length = -KP * Error; 											\
 if(abs(Y_Step_Length) > MAX_STRAFE_REGULATION)							\
 _Y_Step_Length = sign(_Y_Step_Length) * MAX_STRAFE_REGULATION
+
+
 
 
 void _start_climb()
@@ -116,12 +118,19 @@ void _finish_turn()
 	//Går tills ser korridor räknar sedan upp Tick counter
 	if((Right_Sensor != 2) && (Left_Sensor != 2)) //
 	{
-		if(Tick_Counter == 0)
-		Tick_Counter = 1;
+		_X_Step_Length=0;
+		++Tick_Counter;
 		REULATE_STRAFE(STRAFE_K_P);
 	}
 	
-	
+	if(Tick_Counter > 0 && abs(Error) <= 2)
+	{
+		_start_walk_in_corridor();
+	}
+	else if(Tick_Counter >= 5*FRAME_RATE)
+	{
+		_start_walk_in_corridor();
+	}
 	/*if(Tick_Counter >= 2*FRAME_RATE)
 	{
 	Tick_Counter = 0;
@@ -129,11 +138,11 @@ void _finish_turn()
 	_Y_Step_Length = 0;
 	Current_Assignment = WALK_IN_CORRIDOR;
 	}
-	else*/ if (Tick_Counter > 0)
+	else if (Tick_Counter > 0)
 	{
 		_start_walk_in_corridor();
 		//++Tick_Counter;
-	}
+	}*/
 }
 #define DECIRED_DISTANCE_SIDE 32
 #define SIDE_K_P 4
@@ -255,7 +264,10 @@ void init_autonomous_operation()
 
 	Object_Back = 0;
 }
-
+void reset_autonomus_operation()
+{
+	
+}
 unsigned char Transform_Objekt_Backward(unsigned char Object)
 {
 	switch(Object)
@@ -287,7 +299,8 @@ unsigned char Transform_Objekt_Backward(unsigned char Object)
 #define MS_TO_TICK(ms) ms*FRAME_RATE
 void _start_determin_obstacle()
 {
-	_X_Step_Length = HALT_SPEED_KORRIDOR;
+	//Emergency_Stop();
+	//_X_Step_Length = HALT_SPEED_KORRIDOR;
 	Tick_Counter = 0;
 	_Y_Step_Length = 0;
 	_Angular_Step_Length=0;
@@ -295,36 +308,38 @@ void _start_determin_obstacle()
 }
 void _determin_obstacle()
 {
-	++Tick_Counter;
-	//_regulate();
-	/*if(Tick_Counter == 0)
+	#define  X_SPEED_STEP 10
+	if (Forward_Sensor > OBJECT_FRONT_MARGIN)
 	{
-		Emergency_Stop();
-	}
-	++Tick_Counter;
-	if(Tick_Counter < MS_TO_TICK(100))
-	{
-		Z_Yaw = 50;
-		
-		if (Forward_Sensor > OBJECT_FRONT_MARGIN)
-		{
-			Z_Yaw = 0;
-			set_body_rotation();
-			_start_walk_in_corridor();
-		}
-	}
-	else if (Tick_Counter < MS_TO_TICK(200))
-	{
-		Z_Yaw = -50;
-		
-		if (Forward_Sensor > OBJECT_FRONT_MARGIN)
-		{
-			Z_Yaw = 0;
-			set_body_rotation();
-			_start_walk_in_corridor();
-		}
-	}
+		Z_Yaw = 0;
+		set_body_rotation();
+		_start_walk_in_corridor();
 	
+	}
+	else if (_X_Step_Length > 0)
+	{
+		if(_X_Step_Length > X_SPEED_STEP)
+		{	
+			_X_Step_Length -= X_SPEED_STEP;
+		}
+		else
+		{
+			_X_Step_Length = 0;
+			Tick_Counter = 0;
+		}
+	}
+	else if(Tick_Counter < 16)
+	{
+		Z_Yaw += 6;
+	}
+	else if(Tick_Counter< 48)
+	{
+		Z_Yaw -= 6;
+	}
+	else if(Tick_Counter < 64)
+	{
+		Z_Yaw +=6;
+	}
 	else
 	{
 		Z_Yaw = 0;
@@ -339,7 +354,10 @@ void _determin_obstacle()
 			Direction = -Direction;
 			_start_walk_in_corridor();
 		}
-	}*/
+	}
+	++Tick_Counter;
+	#undef X_SPEED_STEP
+	/*
 	if(Tick_Counter <= FRAME_RATE)
 	{
 		_Angular_Step_Length = TURN_LEFT_SPEED;
@@ -383,7 +401,7 @@ void _determin_obstacle()
 			_start_walk_in_corridor();
 		}
 	}
-	
+	*/
 // 	if(Tick_Counter > 3*FRAME_RATE)
 // 	{
 // 		// klätterhinder
@@ -535,7 +553,7 @@ void _walk_in_corridor()
 		{
 			Last_Turn = LEFT_TURN;
 			Back_From_Dead_End = false;
-			_start_turn(TURN_RIGHT_SPEED);
+			_start_turn(TURN_LEFT_SPEED);
 		}
 	}
 	else if (Right_Sensor == 2 || Left_Sensor == 2)//<----------------------???
@@ -544,7 +562,7 @@ void _walk_in_corridor()
 		Last_Turn = NO_TURN;
 	}
 	// Vanlig reglering
-	else
+	else                                                                     
 	{
 		if(Right_Sensor == 0 && Left_Sensor == 0)
 		{
