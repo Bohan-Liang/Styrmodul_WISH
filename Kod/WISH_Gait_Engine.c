@@ -188,17 +188,40 @@ void set_frame(leg_info* leg, float x_local, float y_local)
 			break;
 			
 			case 1:
-			set_pos_leg(leg,
-			x_local*(-cos_frame_factor) + leg->rotate_offset_x,
-			y_local*(-cos_frame_factor) + y_reach_adjust*sin_frame_factor + leg->rotate_offset_y,
-			z_amplitude + leg->rotate_offset_z);
+			if (Body_Height_Adjust > 20)
+			{
+				set_pos_leg(leg,
+				x_local*(-cos_frame_factor) + leg->rotate_offset_x,
+				y_local*(-cos_frame_factor) + 40*sin_frame_factor + leg->rotate_offset_y,
+				z_amplitude + leg->rotate_offset_z);
+			}
+			else
+			{
+				set_pos_leg(leg,
+				x_local*(-cos_frame_factor) + leg->rotate_offset_x,
+				y_local*(-cos_frame_factor) + y_reach_adjust*sin_frame_factor + leg->rotate_offset_y,
+				z_amplitude + leg->rotate_offset_z);
+			}
+			
+
 			break;
 			
 			case 4:
-			set_pos_leg(leg,
-			x_local*(-cos_frame_factor) + leg->rotate_offset_x,
-			y_local*(-cos_frame_factor) - y_reach_adjust*sin_frame_factor + leg->rotate_offset_y,
-			z_amplitude + leg->rotate_offset_z);
+			if (Body_Height_Adjust > 20)
+			{
+				set_pos_leg(leg,
+				x_local*(-cos_frame_factor) + leg->rotate_offset_x,
+				y_local*(-cos_frame_factor) - 40*sin_frame_factor + leg->rotate_offset_y,
+				z_amplitude + leg->rotate_offset_z);
+			} 
+			else
+			{
+				set_pos_leg(leg,
+				x_local*(-cos_frame_factor) + leg->rotate_offset_x,
+				y_local*(-cos_frame_factor) - y_reach_adjust*sin_frame_factor + leg->rotate_offset_y,
+				z_amplitude + leg->rotate_offset_z);
+			}
+
 			break;
 			
 			default:
