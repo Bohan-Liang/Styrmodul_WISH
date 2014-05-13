@@ -4,6 +4,14 @@
 * Created: 2014-04-15 14:28:38
 *  Author: Bohan
 */
+
+//  Att fixa
+// 		Rotation vid återvändsgränd
+// 		Reglering förbi korridor
+// 		Kolla sensorer när klättrar
+// 		Bättre placering av robot innan rotation
+	
+
 #include "WISH_autonomus.h"
 #include "SPI_Slave.h"
 
@@ -142,20 +150,20 @@ void _finish_turn()
 	//Går tills ser korridor räknar sedan upp Tick counter
 	if((Right_Sensor != 2) && (Left_Sensor != 2)) //
 	{
-		_X_Step_Length=0;
-		++Tick_Counter;
+		//_X_Step_Length=0;
+		Tick_Counter = 1;
 		REULATE_STRAFE(STRAFE_K_P);
 	}
 	
-	if(Tick_Counter > 0 && abs(Error) <= 2)
+	/*if(Tick_Counter > 0 && abs(Error) <= 2)
 	{
 		_start_walk_in_corridor();
 	}
-	else if(Tick_Counter >= 5*FRAME_RATE)
+	else if(Tick_Counter >= FRAME_RATE/2)
 	{
 		_start_walk_in_corridor();
-	}
-	/*if(Tick_Counter >= 2*FRAME_RATE)
+	}*/
+	if(Tick_Counter >= 2*FRAME_RATE)
 	{
 	Tick_Counter = 0;
 	_X_Step_Length =SPEED_CORRIDOR;
@@ -166,7 +174,7 @@ void _finish_turn()
 	{
 		_start_walk_in_corridor();
 		//++Tick_Counter;
-	}*/
+	}
 }
 #define DECIRED_DISTANCE_SIDE 32
 #define SIDE_K_P 4
@@ -179,7 +187,7 @@ void _go_past_crossing()
 	}
  	else if(Object_Left == 0) 	
 	{
- 		_Y_Step_Length = SIDE_K_P*(DECIRED_DISTANCE_SIDE-_Left_Distance); 
+ 		_Y_Step_Length = -SIDE_K_P*(DECIRED_DISTANCE_SIDE-_Left_Distance); 
 		if (_Y_Step_Length < -MAX_STRAFE_REGULATION)
 		{
 			_Y_Step_Length = -MAX_STRAFE_REGULATION;
@@ -191,7 +199,7 @@ void _go_past_crossing()
  	}
  	else if (Object_Right == 0)
  	{
- 		_Y_Step_Length = SIDE_K_P*(Right_Distance - DECIRED_DISTANCE_SIDE);
+ 		_Y_Step_Length = -SIDE_K_P*(Right_Distance - DECIRED_DISTANCE_SIDE);
 		if (_Y_Step_Length < -MAX_STRAFE_REGULATION)
 		{
 			_Y_Step_Length = -MAX_STRAFE_REGULATION;
@@ -329,13 +337,16 @@ void _start_determin_obstacle()
 	Tick_Counter = 0;
 	_Y_Step_Length = 0;
 	_Angular_Step_Length=0;
+	Y_Pitch = - 20 * Direction;
 	Current_Assignment = DETERMIN_OBSTACLE;
+	
 }
 void _determin_obstacle()
 {
 	#define  X_SPEED_STEP 10
 	if (Forward_Sensor > OBJECT_FRONT_MARGIN)
 	{
+		Y_Pitch = 0;
 		Z_Yaw = 0;
 		set_body_rotation();
 		_start_walk_in_corridor();
@@ -367,10 +378,12 @@ void _determin_obstacle()
 	}
 	else
 	{
+		Y_Pitch = 0;
 		Z_Yaw = 0;
 		set_body_rotation();
 		if (Type_Front_Sensor == BARRIER_DETECTED)
 		{
+			//Y_Pitch = 0; klättring sätter Y_Pitch
 			_start_climb();
 		}
 		

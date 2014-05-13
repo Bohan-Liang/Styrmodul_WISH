@@ -15,7 +15,7 @@
 #include "SPI_Slave.h"
 // #include "Hex_Keyboard.h"
 
-#define Compliance 32
+#define Compliance 64
 
 int main(void)
 {
