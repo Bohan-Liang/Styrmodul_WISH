@@ -61,7 +61,7 @@ void SPI_transmit_update()
 	{
 		type_transmit = TYPE_CONTROL_DECISION;
 		data_transmit = control_decision;
-		control_decision = NOTHING_TO_SEND;
+		//control_decision = NOTHING_TO_SEND;
 		check_transmit = check_creator(type_transmit, data_transmit);
 	}
 }

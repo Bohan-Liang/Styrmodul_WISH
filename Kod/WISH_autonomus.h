@@ -23,6 +23,20 @@
 #define DOUBLE_CHECK_SENSOR_VALUE_RIGHT 10
 
 
+// Styrbeslut
+#define Turn_left					1
+#define Turn_right					2
+#define Turn_complete				3
+#define Scan_surroundings			4
+#define Nothing_detected			5
+#define Activate_climbing_mode		6
+#define End_climbing_mode			7
+#define Switch_direction			8
+#define Ignore_open_right_hand_side 9
+#define Ignore_open_left_hand_side	10
+#define Rotate_right				11
+#define Rotate_left					12
+
 void autonomous_operation();
 void init_autonomous_operation();
 void reset_autonomus_operation();

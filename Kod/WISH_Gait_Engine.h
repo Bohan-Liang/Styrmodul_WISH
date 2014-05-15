@@ -16,7 +16,7 @@
 #define SWIM_BACK			2
 
 volatile int FRAME_RATE; // Ange hur många del-rörelser en rörelseperiod består av
-#define AUTONOMUS_FRAME_RATE 30
+#define AUTONOMUS_FRAME_RATE 30 // har varit 30 eller 24(dålig) eller 26(dålig)
 #define MANUAL_FRAME_RATE 20
 
 

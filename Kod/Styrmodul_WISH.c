@@ -93,7 +93,7 @@ int main(void)
 				}
 				i=0;
 				Angular_Step_Length = 50;
-				while(i<7*FRAME_RATE + 12)
+				while(i<7*FRAME_RATE + 12*FRAME_RATE/30) // var + 12 vid frame_rate 30
 				{
 					i++;
 					tripod_gait();
