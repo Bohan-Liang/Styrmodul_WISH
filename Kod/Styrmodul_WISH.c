@@ -79,6 +79,27 @@ int main(void)
 		if (MODE == 0xff)
 		{
 			autonomous_operation();
+			/*int i;
+			FRAME_RATE = 30;
+			while(1)
+			{
+				X_Step_Length = 20;
+				i=0;
+				Angular_Step_Length = 0;
+				while(i< 8*FRAME_RATE)
+				{
+					i++;
+					tripod_gait();
+				}
+				i=0;
+				Angular_Step_Length = 50;
+				while(i<7*FRAME_RATE + 12)
+				{
+					i++;
+					tripod_gait();
+				}
+				
+			}*/
 		}
 		else
 		{

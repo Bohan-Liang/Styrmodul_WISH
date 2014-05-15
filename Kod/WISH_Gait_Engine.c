@@ -7,6 +7,7 @@
 
 #include "WISH_Gait_Engine.h"
 #include "SPI_Slave.h"
+#include "WISH_autonomus.h"
 
 // Initiera gångstilen
 void init_gait(int frame_rate)
@@ -70,14 +71,25 @@ void Emergency_Stop()
 	Y_Step_Length_From_Bus = 0;
 	Angular_Step_Length_From_Bus = 0;
 	
+	// byta höjd
+	/*if(Body_Height_Adjust > 0)
+	{
+		Body_Height_Adjust = 0;
+	}
+	else
+	{
+		Body_Height_Adjust = 40;
+	}*/
+	
 	X_Roll = 0;
 	Y_Pitch = 0;
 	Z_Yaw = 0;
 	Body_Height_Adjust = 0;
+	reset_autonomus_operation();
 	MODE = 0;
 	FRAME_RATE = MANUAL_FRAME_RATE;
 	Frame_Counter = FRAME_RATE/2;
-	reset_autonomus_operation();
+	
 }
 
 
@@ -199,7 +211,7 @@ void set_frame(leg_info* leg, float x_local, float y_local)
 			{
 				set_pos_leg(leg,
 				x_local*(-cos_frame_factor) + leg->rotate_offset_x,
-				y_local*(-cos_frame_factor) + y_reach_adjust*sin_frame_factor + leg->rotate_offset_y,
+				y_local*(-cos_frame_factor) + 0*y_reach_adjust*sin_frame_factor + leg->rotate_offset_y,
 				z_amplitude + leg->rotate_offset_z);
 			}
 			
@@ -218,7 +230,7 @@ void set_frame(leg_info* leg, float x_local, float y_local)
 			{
 				set_pos_leg(leg,
 				x_local*(-cos_frame_factor) + leg->rotate_offset_x,
-				y_local*(-cos_frame_factor) - y_reach_adjust*sin_frame_factor + leg->rotate_offset_y,
+				y_local*(-cos_frame_factor) - 0*y_reach_adjust*sin_frame_factor + leg->rotate_offset_y,
 				z_amplitude + leg->rotate_offset_z);
 			}
 

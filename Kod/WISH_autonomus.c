@@ -21,11 +21,13 @@
 #define OBJECT_FRONT_MARGIN 40
 #define OBJECT_FRONT_HALT 25
 
+int Turnt_Speed;// ny för sväng
+
 // Hastigheter
-#define SPEED_CORRIDOR 40 // Har varit 32
+#define SPEED_CORRIDOR 32 // Har varit 32
 #define MEDIUM_SPEED_KORRIDOR 10
 #define HALT_SPEED_KORRIDOR 0
-#define SPEED_CORNER 32
+#define SPEED_CORNER 20
 #define SPEED_CLIMB 40
 
 #define HEIGHT_OFFSET_CLIMB 40
@@ -51,10 +53,11 @@ uint8_t Skip_Turn;
 // För referenssystem
 float _X_Step_Length;
 float _Y_Step_Length;
-float _Angular_Step_Length;
+int _Angular_Step_Length;
 signed char _Error;
 signed char _Diff_Error;
 unsigned char Forward_Sensor_High;
+
 
 
 unsigned char _Left_Distance;
@@ -62,6 +65,8 @@ unsigned char _Right_Distance;
 
 int _Autonomus_Frame_Rate;
 int _Climb_Frame_Rate;
+
+
 
 #define REGULATE_STRAFE(KP)													\
 _Y_Step_Length = -KP * Error; 											\
@@ -125,7 +130,9 @@ void _start_turn(int dir)
 		_start_double_check_sensor_value_right();
 	}*/
 	
-	_Angular_Step_Length = dir;
+	_Angular_Step_Length = 0;//------------------------------------
+	Turnt_Speed = dir;
+	
 	_X_Step_Length = SPEED_CORNER;
 	Tick_Counter = 0;
 	Current_Assignment = TURN;
@@ -388,12 +395,14 @@ void _determin_obstacle()
 		{
 			//Y_Pitch = 0; klättring sätter Y_Pitch
 			_start_climb();
+			send_control_decision(CLIMB);
 		}
 		
 		else
 		{
 			Back_From_Dead_End = true;
 			Direction = -Direction;
+			send_control_decision(REVERSES);
 			_start_walk_in_corridor();
 		}
 	}
@@ -555,7 +564,7 @@ void _climb()
 
 void _double_check_sensor_value_right()
 {
-	#define  SPEED_STEP 5
+	#define  SPEED_STEP 1
 	if (_X_Step_Length > SPEED_STEP && Tick_Counter == 0)
 	{
 		_X_Step_Length -= SPEED_STEP;
@@ -567,16 +576,18 @@ void _double_check_sensor_value_right()
 	}
 	else if(Tick_Counter < 5*FRAME_RATE)
 	{
+		Tick_Counter++;
 		if(Right_Sensor == 0)
 		{
 			_start_walk_in_corridor();
 		}
 	}
-	else if(Tick_Counter > 5*FRAME_RATE)
+	else
 	{
 		//_X_Step_Length += SPEED_STEP;
 		//if (_X_Step_Length > SPEED_CORNER)
 		//{
+			Tick_Counter++;
 			_Y_Step_Length = 0;
 			send_control_decision(TURNING_LEFT);
 			_Angular_Step_Length = TURN_RIGHT_SPEED;
@@ -602,6 +613,7 @@ void _double_check_sensor_value_left()
 	}
 	else if(Tick_Counter < 5*FRAME_RATE)
 	{
+		Tick_Counter++;
 		if(Right_Sensor == 0)
 		{
 			_start_walk_in_corridor();
@@ -609,6 +621,7 @@ void _double_check_sensor_value_left()
 	}
 	else
 	{
+		Tick_Counter++;
 		//_X_Step_Length += SPEED_STEP;
 		//if (_X_Step_Length > SPEED_CORRIDOR)
 		//{
@@ -627,7 +640,7 @@ void _walk_in_corridor()
 {
 	if(Skip_Turn != NO_TURN)
 	{
-		if(Tick_Counter >= 20 * FRAME_RATE )
+		if(Tick_Counter >= 20 * FRAME_RATE )//1.28 m
 		{
 			Last_Turn = NO_TURN;
 			Skip_Turn = NO_TURN;
@@ -640,7 +653,7 @@ void _walk_in_corridor()
 		}
 	}
 	
-	if(Right_Sensor == 3 && Skip_Turn == RIGHT_TURN)
+	/*if(Right_Sensor == 3 && Skip_Turn == RIGHT_TURN)
 	{
 		Last_Turn = NO_TURN;
 		Back_From_Dead_End = false;
@@ -651,7 +664,7 @@ void _walk_in_corridor()
 		Last_Turn = NO_TURN;
 		Back_From_Dead_End = false;
 		Skip_Turn = NO_TURN;
-	}
+	}*/
 	//-----------------------------------------------------------------
 	// Hinder framför robot
 	//-----------------------------------------------------------------
@@ -671,10 +684,10 @@ void _walk_in_corridor()
 		{
 			_regulate();
 		}
-		// Om går förbi korridor på höger sida
-		else if(Object_Left == 0 && Skip_Turn != NO_TURN)
+		// stängt till vänster
+		else if( Skip_Turn == RIGHT_TURN && Left_Sensor != 2)
 		{
-			_Angular_Step_Length = 0.5*(DECIRED_DISTANCE_SIDE-_Left_Distance)*Direction;
+			_Angular_Step_Length = 0.5*(DECIRED_DISTANCE_SIDE - _Left_Distance);
 			if(_Angular_Step_Length > 40)
 			{
 				_Angular_Step_Length= 40;
@@ -683,7 +696,35 @@ void _walk_in_corridor()
 			{
 				_Angular_Step_Length = -40;
 			}
-			/*_Y_Step_Length = -SIDE_K_P*(DECIRED_DISTANCE_SIDE-_Left_Distance);
+		}
+		// stängt till höger
+		else if( Skip_Turn == LEFT_TURN && Right_Sensor != 2)
+		{
+			// e = Höger-Önskat
+			_Angular_Step_Length = 0.5*(_Right_Distance - DECIRED_DISTANCE_SIDE);
+			if(_Angular_Step_Length > 40)
+			{
+				_Angular_Step_Length= 40;
+			}
+			else if(_Angular_Step_Length <-40)
+			{
+				_Angular_Step_Length = -40;
+			}
+			
+		}
+		// Om går förbi korridor på höger sida
+		/*else if((Object_Left == 0 || Object_Right != 0) && Skip_Turn != NO_TURN) // 2014-05-14 lagt till extra villkor för att säkerställa kravet
+		{
+			_Angular_Step_Length = 0.5*(DECIRED_DISTANCE_SIDE-Left_Distance)*Direction;
+			if(_Angular_Step_Length > 40)
+			{
+				_Angular_Step_Length= 40;
+			}
+			else if(_Angular_Step_Length <-40)
+			{
+				_Angular_Step_Length = -40;
+			}
+			_Y_Step_Length = -SIDE_K_P*(DECIRED_DISTANCE_SIDE-_Left_Distance);
 			if (_Y_Step_Length < -MAX_STRAFE_REGULATION)
 			{
 				_Y_Step_Length = -MAX_STRAFE_REGULATION;
@@ -692,21 +733,21 @@ void _walk_in_corridor()
 			{
 				_Y_Step_Length = MAX_STRAFE_REGULATION;
 			}*/
-		}
+		/*}
 		
 		// Om går förbi korridor på vänster sida
-		else if (Object_Right == 0 && Skip_Turn != NO_TURN)
+		else if ((Object_Right == 0 || Object_Left != 0)  && Skip_Turn != NO_TURN) // 2014-05-14 lagt till extra villkor för att säkerställa kravet
 		{
 			_Angular_Step_Length = 0.5*(Right_Distance - DECIRED_DISTANCE_SIDE)*Direction;
-			if(_Angular_Step_Length > 50)
+			if(_Angular_Step_Length > 40)
 			{
-				_Angular_Step_Length= 50;
+				_Angular_Step_Length= 40;
 			}
-			else if(_Angular_Step_Length <-50)
+			else if(_Angular_Step_Length <-40)
 			{
-				_Angular_Step_Length = -50;
+				_Angular_Step_Length = -40;
 			}
-			/*
+			
 			_Y_Step_Length = -SIDE_K_P*(Right_Distance - DECIRED_DISTANCE_SIDE);
 			if (_Y_Step_Length < -MAX_STRAFE_REGULATION)
 			{
@@ -715,8 +756,8 @@ void _walk_in_corridor()
 			else if (_Y_Step_Length > MAX_STRAFE_REGULATION)
 			{
 				_Y_Step_Length = MAX_STRAFE_REGULATION;
-			}*/
-		}
+			}
+		//}*/
 		
 		else
 		{
@@ -747,7 +788,7 @@ void _walk_in_corridor()
 		}
 	}
 	// kollar om kan svänga vänster
-	if (Left_Sensor == 1)
+	else if (Left_Sensor == 1)
 	{
 		//_start_go_past_crossing();
 		if((Last_Turn == RIGHT_TURN && Back_From_Dead_End == true) || Skip_Turn == LEFT_TURN)
@@ -773,12 +814,16 @@ void _walk_in_corridor()
 void _turn()
 {
 	++Tick_Counter;
-	if (Tick_Counter >= 6*FRAME_RATE)
+	if(Tick_Counter > 2*FRAME_RATE)
+	{
+		_Angular_Step_Length = Turnt_Speed;
+	}		
+	
+	if (Tick_Counter >= 9*FRAME_RATE + 12)
 	{
 		_start_finish_turn();
 	}
 }
-
 
 void _rotate()
 {
