@@ -39,7 +39,7 @@
 
 void autonomous_operation();
 void init_autonomous_operation();
-void reset_autonomus_operation();
+void reset_autonomus_operation(uint8_t);
 
 // kostanter i regler algoritmen
 #define Error_Band_Middle 50

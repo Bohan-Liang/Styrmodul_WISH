@@ -11,6 +11,25 @@
 // 		Kolla sensorer när klättrar
 // 		Bättre placering av robot innan rotation
 	
+// hastighetslägen
+float speed_corridor;
+float speed_corner;
+// hastighet 1
+#define SPEED_CORRIDOR_S1	32
+#define SPEED_CORNER_S1		20
+#define FRAME_RATE_S1		30
+// hastighet 2
+#define SPEED_CORRIDOR_S2	32
+#define SPEED_CORNER_S2		20
+#define FRAME_RATE_S2		26
+// hastighet 3
+#define SPEED_CORRIDOR_S3	40
+#define SPEED_CORNER_S3		20
+#define FRAME_RATE_S3		26
+// hastighet 4
+#define SPEED_CORRIDOR_S4	40
+#define SPEED_CORNER_S4		20
+#define FRAME_RATE_S4		24
 
 #include "WISH_autonomus.h"
 #include "SPI_Slave.h"
@@ -21,13 +40,12 @@
 #define OBJECT_FRONT_MARGIN 40
 #define OBJECT_FRONT_HALT 25
 
-int Turnt_Speed;// ny för sväng
+int Turn_Speed;// ny för sväng
 
 // Hastigheter
-#define SPEED_CORRIDOR 40 // Har varit 32, 34
+// Har varit 32, 34
 #define MEDIUM_SPEED_KORRIDOR 10
 #define HALT_SPEED_KORRIDOR 0
-#define SPEED_CORNER 20
 #define SPEED_CLIMB 40
 
 #define HEIGHT_OFFSET_CLIMB 40
@@ -70,26 +88,9 @@ int _Climb_Frame_Rate;
 
 #define REGULATE_STRAFE(KP)													\
 _Y_Step_Length = -KP * Error; 											\
-if(abs(Y_Step_Length) > MAX_STRAFE_REGULATION)							\
+if(abs(_Y_Step_Length) > MAX_STRAFE_REGULATION)							\
 _Y_Step_Length = sign(_Y_Step_Length) * MAX_STRAFE_REGULATION
 
-
-void _start_double_check_sensor_value_right()
-{
-	_Y_Step_Length = 0;
-	_Angular_Step_Length = 0;
-	//_X_Step_Length -= 5;
-	Tick_Counter = 0;
-	Current_Assignment = DOUBLE_CHECK_SENSOR_VALUE_RIGHT;
-}
-void _start_double_check_sensor_value_left()
-{
-	_Y_Step_Length = 0;
-	_Angular_Step_Length = 0;
-	//_X_Step_Length -= 5;
-	Tick_Counter = 0;
-	Current_Assignment = DOUBLE_CHECK_SENSOR_VALUE_LEFT;
-}
 void _start_climb()
 {
 	//Ändrar höjd och vinkel
@@ -108,7 +109,7 @@ void _start_climb()
 void _start_walk_in_corridor()
 {
 	Tick_Counter = 0;
-	_X_Step_Length =SPEED_CORRIDOR;
+	_X_Step_Length =speed_corridor;
 	_Y_Step_Length = 0;
 	_Angular_Step_Length = 0;
 	
@@ -118,6 +119,7 @@ void _start_walk_in_corridor()
 	set_body_rotation();
 	Current_Assignment = WALK_IN_CORRIDOR;
 }
+bool is_turning;
 void _start_turn(int dir)
 {
 	_Y_Step_Length = 0;
@@ -133,15 +135,17 @@ void _start_turn(int dir)
 	}
 	
 	_Angular_Step_Length = 0;//------------------------------------
-	Turnt_Speed = dir;
+	Turn_Speed = dir;
 	
-	_X_Step_Length = SPEED_CORNER;
+	is_turning = false;
+	
+	_X_Step_Length = speed_corner;
 	Tick_Counter = 0;
 	Current_Assignment = TURN;
 }
 void _start_finish_turn()
 {
-	_X_Step_Length = SPEED_CORRIDOR;
+	_X_Step_Length = speed_corridor;
 	_Angular_Step_Length = 0;
 	Tick_Counter = 0;
 	send_control_decision(FINISHED_TURNING);
@@ -188,6 +192,7 @@ void _finish_turn()
 		//++Tick_Counter;
 	//}
 }
+
 #define DECIRED_DISTANCE_SIDE 32
 #define SIDE_K_P 4
 
@@ -258,62 +263,6 @@ void _regulate()
 	}
 }
 
-void init_autonomous_operation()
-{
-	Forward_Sensor_High = UINT8_MAX;
-	Last_Turn = NO_TURN;
-	Back_From_Dead_End = false;
-	Skip_Turn = NO_TURN;
-	
-	_Autonomus_Frame_Rate = AUTONOMUS_FRAME_RATE;
-	_Climb_Frame_Rate = 48;
-	
-	FRAME_RATE = _Autonomus_Frame_Rate;
-	
-	Error = 0;
-	Accumulated_Error = 0;
-	Diff_Error = 0;
-	K_P = 1;
-	K_D = 4;
-	
-	_Error = 0;
-	_Diff_Error = 0;
-	
-	X_Step_Length = SPEED_CORRIDOR;
-	Angular_Step_Length = 0;
-	Y_Step_Length = 0;
-	
-	_X_Step_Length = SPEED_CORRIDOR;
-	_Y_Step_Length = 0;
-	_Angular_Step_Length = 0;
-	
-	Current_Assignment = WALK_IN_CORRIDOR;
-	Direction = FORWARD;
-	
-	Error = 0; // Avvikelse från mittlinje
-
-	Diff_Error = 0; //speed_side_ways i ollan o robbe program
-
-
-	Object_Right = 0; // ger ett värde 0 då båda sensorerna på höger sida ser en vägg. 1 då en av sensorerna ser en vägg och den andra inte, och 2 då ingen ser.
-
-	Object_Left = 0; // motsvarande fast för vänster sida.
-
-	Front_Sensor = UINT8_MAX; // främre sensorn
-
-	Back_Sensor = UINT8_MAX;
-
-	Front_Sensor_High = UINT8_MAX;
-	Back_sensor_High = UINT8_MAX;
-		
-	Object_Front = 0;
-
-	Object_Back = 0;
-}
-void reset_autonomus_operation()
-{
-	init_autonomous_operation();	
-}
 unsigned char Transform_Objekt_Backward(unsigned char Object)
 {
 	switch(Object)
@@ -566,79 +515,6 @@ void _climb()
 	}
 }
 
-void _double_check_sensor_value_right()
-{
-	#define  SPEED_STEP 1
-	if (_X_Step_Length > SPEED_STEP && Tick_Counter == 0)
-	{
-		_X_Step_Length -= SPEED_STEP;
-	}
-	else if(Tick_Counter == 0)
-	{
-		Tick_Counter=1;
-		_X_Step_Length = 0;
-	}
-	else if(Tick_Counter < 5*FRAME_RATE)
-	{
-		Tick_Counter++;
-		if(Right_Sensor == 0)
-		{
-			_start_walk_in_corridor();
-		}
-	}
-	else
-	{
-		//_X_Step_Length += SPEED_STEP;
-		//if (_X_Step_Length > SPEED_CORNER)
-		//{
-			Tick_Counter++;
-			_Y_Step_Length = 0;
-			send_control_decision(TURNING_LEFT);
-			_Angular_Step_Length = TURN_RIGHT_SPEED;
-			_X_Step_Length = SPEED_CORNER;
-			Tick_Counter = 0;
-			Current_Assignment = TURN;
-		//}
-	}
-	#undef  SPEED_STEP
-}
-
-void _double_check_sensor_value_left()
-{
-	#define  SPEED_STEP 5
-	if (_X_Step_Length > SPEED_STEP && Tick_Counter == 0)
-	{
-		_X_Step_Length -= SPEED_STEP;
-	}
-	else if(Tick_Counter == 0)
-	{
-		Tick_Counter=1;
-		_X_Step_Length = 0;
-	}
-	else if(Tick_Counter < 5*FRAME_RATE)
-	{
-		Tick_Counter++;
-		if(Right_Sensor == 0)
-		{
-			_start_walk_in_corridor();
-		}
-	}
-	else
-	{
-		Tick_Counter++;
-		//_X_Step_Length += SPEED_STEP;
-		//if (_X_Step_Length > SPEED_CORRIDOR)
-		//{
-			_Y_Step_Length = 0;
-			send_control_decision(TURNING_LEFT);
-			_Angular_Step_Length = TURN_LEFT_SPEED;
-			_X_Step_Length = SPEED_CORNER;
-			Tick_Counter = 0;
-			Current_Assignment = TURN;
-		//}
-	}
-	#undef  SPEED_STEP
-}
 
 void _walk_in_corridor()
 {
@@ -801,19 +677,47 @@ void _walk_in_corridor()
 		}
 	}
 }
-
 void _turn()
 {
 	++Tick_Counter;
-	if(Tick_Counter > 2*FRAME_RATE)
+	// kollar om den redan börjat svänga
+	if(is_turning)
 	{
-		_Angular_Step_Length = Turnt_Speed;
-	}		
-	
-	if (Tick_Counter >= 9*FRAME_RATE + 12/30*FRAME_RATE) // var + 12
-	{
-		_start_finish_turn();
+		if (Tick_Counter >= 7*FRAME_RATE + 12/30*FRAME_RATE) // var + 12
+		{
+			_start_finish_turn();
+		}
 	}
+	// kollar om gått tillräcligt långt fram för att börja svänga
+	else if((Tick_Counter > (2*FRAME_RATE-FRAME_RATE/4)) && !is_turning)
+	{
+		
+		// kollar om redo att börja svänga
+		if(Frame_Counter == FRAME_RATE/2)
+		{
+			_Angular_Step_Length = Turn_Speed;
+			is_turning = true;
+			Tick_Counter = 0;
+			
+			if(Turn_Speed == TURN_RIGHT_SPEED)
+			{
+				//kollar om fortfarande öppet
+				if(Right_Sensor != 1 && Right_Sensor != 2)
+				{
+					_start_walk_in_corridor();
+				}
+				
+			}
+			else if(Turn_Speed == TURN_LEFT_SPEED)
+			{
+				//kollar om fortfarande öppet
+				if(Left_Sensor != 1 && Left_Sensor != 2)
+				{
+					_start_walk_in_corridor();
+				}
+			}
+		}	
+	}		
 }
 
 void _rotate()
@@ -821,9 +725,7 @@ void _rotate()
 	++Tick_Counter;
 	if (Tick_Counter > 6*FRAME_RATE)
 	{
-		_X_Step_Length = SPEED_CORRIDOR * Direction;
-		_Angular_Step_Length = 0;
-		Current_Assignment = WALK_IN_CORRIDOR;
+		_start_walk_in_corridor();
 	}
 }
 
@@ -898,22 +800,142 @@ void autonomous_operation()
 		case GO_PAST_CROSSING:
 		//---------------------------------------------------------------------
 		_go_past_crossing();
-		break;
-		//---------------------------------------------------------------------
-		case DOUBLE_CHECK_SENSOR_VALUE_LEFT:
-		//---------------------------------------------------------------------
-		_double_check_sensor_value_right();
-		break;
-		//---------------------------------------------------------------------
-		case DOUBLE_CHECK_SENSOR_VALUE_RIGHT:
-		//---------------------------------------------------------------------
-		_double_check_sensor_value_right();
-		break;
-		
+		break;		
 	}
 	
 	//Sätter hastigheter
 	X_Step_Length = _X_Step_Length * Direction;
 	Y_Step_Length = _Y_Step_Length;
 	Angular_Step_Length = _Angular_Step_Length;
+}
+
+void init_autonomous_operation()
+{
+	Forward_Sensor_High = UINT8_MAX;
+	Last_Turn = NO_TURN;
+	Back_From_Dead_End = false;
+	Skip_Turn = NO_TURN;
+	
+	_Autonomus_Frame_Rate = FRAME_RATE_S1;
+	_Climb_Frame_Rate = 48;
+	FRAME_RATE = _Autonomus_Frame_Rate;
+	
+	Error = 0;
+	Accumulated_Error = 0;
+	Diff_Error = 0;
+	K_P = 1;
+	K_D = 4;
+	
+	_Error = 0;
+	_Diff_Error = 0;
+	
+	speed_corridor = SPEED_CORRIDOR_S1;
+	speed_corner = SPEED_CORNER_S1;
+	
+	X_Step_Length = speed_corridor;
+	Angular_Step_Length = 0;
+	Y_Step_Length = 0;
+	
+	_X_Step_Length = speed_corridor;
+	_Y_Step_Length = 0;
+	_Angular_Step_Length = 0;
+	
+	Current_Assignment = WALK_IN_CORRIDOR;
+	Direction = FORWARD;
+	
+	Error = 0; // Avvikelse från mittlinje
+
+	Diff_Error = 0; //speed_side_ways i ollan o robbe program
+
+
+	Object_Right = 0; // ger ett värde 0 då båda sensorerna på höger sida ser en vägg. 1 då en av sensorerna ser en vägg och den andra inte, och 2 då ingen ser.
+
+	Object_Left = 0; // motsvarande fast för vänster sida.
+
+	Front_Sensor = UINT8_MAX; // främre sensorn
+
+	Back_Sensor = UINT8_MAX;
+
+	Front_Sensor_High = UINT8_MAX;
+	Back_sensor_High = UINT8_MAX;
+	
+	Object_Front = 0;
+
+	Object_Back = 0;
+}
+void reset_autonomus_operation(uint8_t autionomus_speed)
+{
+	Forward_Sensor_High = UINT8_MAX;
+	Last_Turn = NO_TURN;
+	Back_From_Dead_End = false;
+	Skip_Turn = NO_TURN;
+	
+	_Climb_Frame_Rate = 48;
+	FRAME_RATE = _Autonomus_Frame_Rate;
+	
+	Error = 0;
+	Accumulated_Error = 0;
+	Diff_Error = 0;
+	K_P = 1;
+	K_D = 4;
+	
+	_Error = 0;
+	_Diff_Error = 0;
+	
+	X_Step_Length = speed_corridor;
+	Angular_Step_Length = 0;
+	Y_Step_Length = 0;
+	
+	_X_Step_Length = speed_corridor;
+	_Y_Step_Length = 0;
+	_Angular_Step_Length = 0;
+	
+	Current_Assignment = WALK_IN_CORRIDOR;
+	Direction = FORWARD;
+	
+	Error = 0; // Avvikelse från mittlinje
+
+	Diff_Error = 0; //speed_side_ways i ollan o robbe program
+
+
+	Object_Right = 0; // ger ett värde 0 då båda sensorerna på höger sida ser en vägg. 1 då en av sensorerna ser en vägg och den andra inte, och 2 då ingen ser.
+
+	Object_Left = 0; // motsvarande fast för vänster sida.
+
+	Front_Sensor = UINT8_MAX; // främre sensorn
+
+	Back_Sensor = UINT8_MAX;
+
+	Front_Sensor_High = UINT8_MAX;
+	Back_sensor_High = UINT8_MAX;
+	
+	Object_Front = 0;
+
+	Object_Back = 0;
+	switch(autionomus_speed)
+	{
+		case 1:
+			speed_corridor = SPEED_CORRIDOR_S1;
+			speed_corner = SPEED_CORNER_S1;
+			_Autonomus_Frame_Rate = FRAME_RATE_S1;
+		break;
+		
+		case 2:
+			speed_corridor = SPEED_CORRIDOR_S2;
+			speed_corner = SPEED_CORNER_S2;
+			_Autonomus_Frame_Rate = FRAME_RATE_S2;
+		break;
+		
+		case 3:
+			speed_corridor = SPEED_CORRIDOR_S3;
+			speed_corner = SPEED_CORNER_S3;
+			_Autonomus_Frame_Rate = FRAME_RATE_S3;
+		break;
+		
+		case 4:
+			speed_corridor = SPEED_CORRIDOR_S3;
+			speed_corner = SPEED_CORNER_S3;
+			_Autonomus_Frame_Rate = FRAME_RATE_S3;
+		break;
+	}
 }

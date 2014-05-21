@@ -85,7 +85,7 @@ void Emergency_Stop()
 	Y_Pitch = 0;
 	Z_Yaw = 0;
 	Body_Height_Adjust = 0;
-	reset_autonomus_operation();
+	reset_autonomus_operation(0);
 	MODE = 0;
 	FRAME_RATE = MANUAL_FRAME_RATE;
 	Frame_Counter = FRAME_RATE/2;

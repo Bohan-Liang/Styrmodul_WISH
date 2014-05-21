@@ -9,9 +9,12 @@
 #include "WISH_Gait_Engine.h"
 #include "WISH_autonomus.h"
 
+uint8_t Autonomus_Speed;
+
 //Initierar SPI Slave
 void SPI_init(void)
 {
+	Autonomus_Speed = 1;
 	//spi pins on port b, MISO output, all other input
 	DDRB = (1<<DDB6);
 	// SPI enable, Slave
@@ -86,7 +89,7 @@ void SPI_control()
 			MODE = data_recieved;
 			if(MODE == 0xff)
 			{
-				FRAME_RATE = AUTONOMUS_FRAME_RATE;
+				reset_autonomus_operation(Autonomus_Speed);
 			}
 			else
 			{
@@ -176,7 +179,8 @@ void SPI_control()
 			case 0x19:
 			// sista typen som ska uppdateras
 			
-			case 0x21:
+			case 33:
+			Autonomus_Speed = data_recieved;
 			// K_P = data_recieved;
 			break;
 			

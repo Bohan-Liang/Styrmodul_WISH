@@ -1,0 +1,20 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Atmel Studio Solution File, Format Version 11.00
+Project("{54F91283-7BC4-4236-8FF9-10F437C3AD48}") = "Styrmodul_WISH", "Styrmodul_WISH.cproj", "{5C30CC31-601C-49E7-A1FC-B7CC3237183B}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|AVR = Debug|AVR
+		Release|AVR = Release|AVR
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{5C30CC31-601C-49E7-A1FC-B7CC3237183B}.Debug|AVR.ActiveCfg = Debug|AVR
+		{5C30CC31-601C-49E7-A1FC-B7CC3237183B}.Debug|AVR.Build.0 = Debug|AVR
+		{5C30CC31-601C-49E7-A1FC-B7CC3237183B}.Release|AVR.ActiveCfg = Release|AVR
+		{5C30CC31-601C-49E7-A1FC-B7CC3237183B}.Release|AVR.Build.0 = Release|AVR
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
