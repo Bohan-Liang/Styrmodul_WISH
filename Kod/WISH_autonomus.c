@@ -192,7 +192,22 @@ void _finish_turn()
 		//++Tick_Counter;
 	//}
 }
-
+void _start_rotate_right()
+{
+	_Angular_Step_Length = TURN_RIGHT_SPEED;
+	_X_Step_Length = 0;
+	_Y_Step_Length = 0;
+	Tick_Counter = 0;
+	Current_Assignment = ROTATE;
+}
+void _start_rotate_left()
+{
+	_Angular_Step_Length = TURN_LEFT_SPEED;
+	_X_Step_Length = 0;
+	_Y_Step_Length = 0;
+	Tick_Counter = 0;
+	Current_Assignment = ROTATE;
+}
 #define DECIRED_DISTANCE_SIDE 32
 #define SIDE_K_P 4
 
@@ -352,10 +367,23 @@ void _determin_obstacle()
 		
 		else
 		{
-			Back_From_Dead_End = true;
-			Direction = -Direction;
-			send_control_decision(Switch_direction);
-			_start_walk_in_corridor();
+			if(Right_Sensor == 2 && Skip_Turn != RIGHT_TURN)
+			{
+				send_control_decision(ROTATING_RIGHT);
+				_start_rotate_right();
+			}
+			else if(Left_Sensor == 2 && Skip_Turn != LEFT_TURN)
+			{
+				send_control_decision(ROTATING_LEFT);
+				_start_rotate_left();
+			}
+			else
+			{
+				Back_From_Dead_End = true;
+				Direction = -Direction;
+				send_control_decision(Switch_direction);
+				_start_walk_in_corridor();
+			}
 		}
 	}
 	++Tick_Counter;
